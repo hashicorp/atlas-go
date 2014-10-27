@@ -16,7 +16,7 @@ func TestNewClient_badURL(t *testing.T) {
 		t.Fatal("expected error, but nothing was returned")
 	}
 
-	expected := "client: misisng url"
+	expected := "client: missing url"
 	if !strings.Contains(err.Error(), expected) {
 		t.Fatalf("expected %q to contain %q", err.Error(), expected)
 	}
@@ -38,42 +38,48 @@ func TestNewClient_parsesURL(t *testing.T) {
 	}
 }
 
-func TestNewClient_setsHTTPClient(t *testing.T) {
+func TestNewClient_setsDefaultHTTPClient(t *testing.T) {
 	client, err := NewClient("https://example.com/foo/bar")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(client.httpClient, http.DefaultClient) {
-		t.Fatalf("expected %q to equal %q", client.httpClient, http.DefaultClient)
+	if !reflect.DeepEqual(client.HTTPClient, http.DefaultClient) {
+		t.Fatalf("expected %q to equal %q", client.HTTPClient, http.DefaultClient)
 	}
 }
 
-func TestSetHTTPClient_setsHTTPClient(t *testing.T) {
+func TestLogin_missingUsername(t *testing.T) {
 	client, err := NewClient("https://example.com/foo/bar")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expected := &http.Client{}
-	client.SetHTTPClient(expected)
+	_, err = client.Login("", "")
+	if err == nil {
+		t.Fatal("expected error, but nothing was returned")
+	}
 
-	if !reflect.DeepEqual(client.httpClient, expected) {
-		t.Fatalf("expected %q to equal %q", client.httpClient, expected)
+	expected := "client: missing username"
+	if !strings.Contains(err.Error(), expected) {
+		t.Fatalf("expected %q to contain %q", err.Error(), expected)
 	}
 }
 
-func TestSetToken_setsToken(t *testing.T) {
+func TestLogin_missingPassword(t *testing.T) {
 	client, err := NewClient("https://example.com/foo/bar")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expected := "token"
-	client.SetToken(expected)
+	_, err = client.Login("username", "")
+	if err == nil {
+		t.Fatal("expected error, but nothing was returned")
+	}
 
-	if !reflect.DeepEqual(client.token, expected) {
-		t.Fatalf("expected %q to equal %q", client.token, expected)
+	expected := "client: missing password"
+	if !strings.Contains(err.Error(), expected) {
+		t.Fatalf("expected %q to contain %q", err.Error(), expected)
 	}
 }
 

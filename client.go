@@ -13,49 +13,69 @@ import (
 type Client struct {
 	// URL is the full endpoint address to the Harmony server including the
 	// protocol, port, and path.
-	URL    *url.URL
-	rawURL string
+	URL *url.URL
 
-	// token is the Harmony authentication token
-	token string
+	// Token is the Harmony authentication token
+	Token string
 
-	// httpClient is the underlying http client with which to make requests.
-	httpClient *http.Client
+	// HTTPClient is the underlying http client with which to make requests.
+	HTTPClient *http.Client
 }
 
-//
-func NewClient(url string) (*Client, error) {
-	client := &Client{rawURL: url}
+// NewClient creates a new Harmony Client from the given URL (as a string). If
+// the URL cannot be parsed, an error is returned. The HTTPClient is set to
+// http.DefaultClient, but this can be changed programatically by setting
+// client.HTTPClient. The user can also programtically set the URL as a
+// *url.URL.
+func NewClient(urlString string) (*Client, error) {
+	if len(urlString) == 0 {
+		return nil, fmt.Errorf("client: missing url")
+	}
+
+	parsedURL, err := url.Parse(urlString)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &Client{URL: parsedURL}
 	if err := client.init(); err != nil {
 		return nil, err
 	}
+
 	return client, nil
 }
 
+// Login accepts a username and password as string arguments. Both username and
+// password must be non-nil, non-empty values. Harmony does not permit
+// passwordless authentication.
 //
-func (c *Client) SetHTTPClient(client *http.Client) {
-	c.httpClient = client
+// If authentication is unsuccessful, an error is returned with the body of the
+// error containing the server's response.
+//
+// If authentication is successful, this method sets the Token value on the
+// Client and returns the Token as a string.
+func (c *Client) Login(username, password string) (string, error) {
+	if len(username) == 0 {
+		return "", fmt.Errorf("client: missing username")
+	}
+
+	if len(password) == 0 {
+		return "", fmt.Errorf("client: missing password")
+	}
+
+	// Make a request
+
+	// If there's an error, return it
+
+	// Set the token
+
+	// Return the token
+	return "", nil
 }
 
-//
-func (c *Client) SetToken(token string) {
-	c.token = token
-}
-
-//
+// init() sets defaults on the client.
 func (c *Client) init() error {
-	if len(c.rawURL) == 0 {
-		return fmt.Errorf("client: misisng url")
-	}
-
-	u, err := url.Parse(c.rawURL)
-	if err != nil {
-		return err
-	}
-	c.URL = u
-
-	c.httpClient = http.DefaultClient
-
+	c.HTTPClient = http.DefaultClient
 	return nil
 }
 
@@ -72,7 +92,7 @@ func (c *Client) request(verb, thepath string) (*http.Response, error) {
 		return nil, err
 	}
 
-	response, err := c.httpClient.Do(request)
+	response, err := c.HTTPClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
