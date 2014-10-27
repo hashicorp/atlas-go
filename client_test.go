@@ -125,4 +125,23 @@ func TestRequest_returnsError(t *testing.T) {
 		t.Fatalf("expected %q to contain %q", err.Error(), expected)
 	}
 }
+
+func TestRequestJSON_decodesData(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var response struct{ Ok bool }
+	err = client.requestJSON("get", "/_json", &response)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !response.Ok {
+		t.Fatal("expected response to be Ok, but was not")
+	}
 }

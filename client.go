@@ -2,6 +2,7 @@ package harmony
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -105,4 +106,18 @@ func (c *Client) request(verb, thepath string) (*http.Response, error) {
 	}
 
 	return response, nil
+}
+
+// requestJSON invokes the request function, but then parses the result as JSON.
+// If the request function returns an error, this method returns an error. If
+// the response is not valid JSON, an error is returned.
+func (c *Client) requestJSON(verb, thepath string, out interface{}) error {
+	response, err := c.request(verb, thepath)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	decoder := json.NewDecoder(response.Body)
+	return decoder.Decode(out)
 }
