@@ -50,7 +50,6 @@ func (hs *harmonyServer) Stop() {
 func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
-	// mux.HandleFunc("/boxes", hs.boxesHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,9 +68,4 @@ func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
 func (hs *harmonyServer) jsonHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"ok": true}`)
-}
-
-func (hs *harmonyServer) boxesHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{"text": "testing"}`)
 }
