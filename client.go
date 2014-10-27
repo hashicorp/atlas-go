@@ -102,7 +102,7 @@ func (c *Client) request(verb, thepath string) (*http.Response, error) {
 		var buff bytes.Buffer
 		io.Copy(&buff, response.Body)
 		return response, fmt.Errorf("client: unexpected response code %d:\n%s",
-			response.StatusCode, buff.Bytes())
+			response.StatusCode, buff.String())
 	}
 
 	return response, nil
