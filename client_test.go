@@ -1,9 +1,9 @@
 package harmony
 
 import (
-	"fmt"
+	"bytes"
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"strings"
@@ -83,22 +83,46 @@ func TestLogin_missingPassword(t *testing.T) {
 	}
 }
 
-func TestRequest_temp(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"text": "testing"}`)
-	}))
-	defer ts.Close()
+func TestRequest_getsData(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
 
-	client, err := NewClient(ts.URL)
+	client, err := NewClient(server.URL.String())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	response, err := client.request("get", "/zip")
+	response, err := client.request("get", "/_status/200")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_ = response
+	var body bytes.Buffer
+	io.Copy(&body, response.Body)
+
+	expected := "Status code: 200"
+	if body.String() != expected {
+		t.Fatalf("expected %q to equal %q", body.String(), expected)
+	}
+}
+
+func TestRequest_returnsError(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = client.request("get", "/_status/404")
+	if err == nil {
+		t.Fatal("expected error, but nothing was returned")
+	}
+
+	expected := "Status code: 404"
+	if !strings.Contains(err.Error(), expected) {
+		t.Fatalf("expected %q to contain %q", err.Error(), expected)
+	}
+}
 }
