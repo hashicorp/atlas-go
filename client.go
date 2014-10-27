@@ -88,13 +88,36 @@ func (c *Client) Login(username, password string) (string, error) {
 	}
 
 	// Make a request
+	request, err := c.NewRequest("POST", "/api/v1/authenticate", &RequestOptions{
+		Body: strings.NewReader(url.Values{
+			"user[login]":    []string{username},
+			"user[password]": []string{password},
+		}.Encode()),
+		Headers: map[string]string{
+			"Content-Type": "application/x-www-form-urlencoded",
+		},
+	})
+	if err != nil {
+		return "", err
+	}
 
-	// If there's an error, return it
+	// Make the request
+	response, err := checkResp(c.HTTPClient.Do(request))
+	if err != nil {
+		return "", err
+	}
+
+	// Decode the body
+	var tokenResponse struct{ Token string }
+	if err := decodeBody(response, &tokenResponse); err != nil {
+		return "", nil
+	}
 
 	// Set the token
+	c.Token = tokenResponse.Token
 
 	// Return the token
-	return "", nil
+	return c.Token, nil
 }
 
 // init() sets defaults on the client.
