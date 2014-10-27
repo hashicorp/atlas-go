@@ -90,8 +90,9 @@ func (c *Client) Login(username, password string) (string, error) {
 	// Make a request
 	request, err := c.NewRequest("POST", "/api/v1/authenticate", &RequestOptions{
 		Body: strings.NewReader(url.Values{
-			"user[login]":    []string{username},
-			"user[password]": []string{password},
+			"user[login]":       []string{username},
+			"user[password]":    []string{password},
+			"user[description]": []string{"Created by the Harmony Go Client"},
 		}.Encode()),
 		Headers: map[string]string{
 			"Content-Type": "application/x-www-form-urlencoded",
