@@ -50,6 +50,8 @@ func (hs *harmonyServer) Stop() {
 func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
+
+	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,10 +64,37 @@ func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(int(code))
-	fmt.Fprintf(w, "Status code: %d", code)
 }
 
 func (hs *harmonyServer) jsonHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"ok": true}`)
+}
+
+func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		hs.t.Fatal(err)
+	}
+
+	login, password := r.Form["user[login]"][0], r.Form["user[password]"][0]
+
+	if login == "sethloves" && password == "bacon" {
+		w.WriteHeader(200)
+		fmt.Fprintf(w, `
+      {
+        "token": "pX4AQ5vO7T-xJrxsnvlB0cfeF-tGUX-A-280LPxoryhDAbwmox7PKinMgA1F6R3BKaT"
+      }
+    `)
+	} else {
+		w.WriteHeader(401)
+		fmt.Fprintf(w, `
+      {
+        "errors": {
+          "error": [
+            "Bad login details"
+          ]
+        }
+      }
+    `)
+	}
 }
