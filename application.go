@@ -9,7 +9,7 @@ import (
 )
 
 // AppWraper
-type AppWrapper struct {
+type appWrapper struct {
 	Application *App `json:"application"`
 }
 
@@ -37,7 +37,7 @@ func (c *Client) App(user, name string) (*App, error) {
 		return nil, err
 	}
 
-	var aw AppWrapper
+	var aw appWrapper
 	if err := decodeJSON(response, &aw); err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *Client) App(user, name string) (*App, error) {
 // App is created successfully, it is returned. If the server returns any
 // errors, an error is returned.
 func (c *Client) CreateApp(user, name string) (*App, error) {
-	body, err := json.Marshal(&AppWrapper{&App{
+	body, err := json.Marshal(&appWrapper{&App{
 		User: user,
 		Name: name,
 	}})
@@ -70,7 +70,7 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 		return nil, err
 	}
 
-	var aw AppWrapper
+	var aw appWrapper
 	if err := decodeJSON(response, &aw); err != nil {
 		return nil, err
 	}

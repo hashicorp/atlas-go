@@ -113,7 +113,7 @@ func (hs *harmonyServer) vagrantCreateApplicationHandler(w http.ResponseWriter, 
 		return
 	}
 
-	var aw AppWrapper
+	var aw appWrapper
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&aw); err != nil && err != io.EOF {
 		hs.t.Fatal(err)
@@ -144,7 +144,7 @@ func (hs *harmonyServer) vagrantCreateApplicationsHandler(w http.ResponseWriter,
 	user, name := parts[0], parts[1]
 
 	if user == "hashicorp" && name == "existing" {
-		body, err := json.Marshal(&AppWrapper{&App{
+		body, err := json.Marshal(&appWrapper{&App{
 			User: "hashicorp",
 			Name: "existing",
 		}})
