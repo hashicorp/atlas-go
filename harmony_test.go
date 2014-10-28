@@ -61,6 +61,8 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
+
+	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing", hs.vagrantBCExistingHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,6 +108,22 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
       }
     `)
 	}
+}
+
+func (hs *harmonyServer) vagrantBCExistingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+	{
+		"build_configuration": {
+			"username": "hashicorp",
+			"name": "existing"
+		}
+	}
+	`)
 }
 
 func (hs *harmonyServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Request) {
