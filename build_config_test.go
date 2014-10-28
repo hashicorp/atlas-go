@@ -22,7 +22,7 @@ func TestBuildConfig_fetches(t *testing.T) {
 
 	expected := &BuildConfig{
 		User: "hashicorp",
-		Name:     "existing",
+		Name: "existing",
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -42,7 +42,7 @@ func TestCreateBuildConfigVersion(t *testing.T) {
 	data := new(bytes.Buffer)
 	err = client.CreateBuildConfigVersion(&BuildConfigVersion{
 		User: "hashicorp",
-		Name:     "existing",
+		Name: "existing",
 		Builds: []BuildConfigBuild{
 			BuildConfigBuild{Name: "foo", Type: "ami"},
 		},
