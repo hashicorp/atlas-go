@@ -26,7 +26,7 @@ type App struct {
 // App gets the App by the given user space and name. In the event the App is
 // not found (404), or for any other non-200 responses, an error is returned.
 func (c *Client) App(user, name string) (*App, error) {
-	endpoint := fmt.Sprintf("/api/v2/vagrant/applications/%s/%s", user, name)
+	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s", user, name)
 	request, err := c.Request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 		return nil, err
 	}
 
-	endpoint := "/api/v2/vagrant/applications"
+	endpoint := "/api/v1/vagrant/applications"
 	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewBuffer(body),
 	})
@@ -93,7 +93,7 @@ type appVersion struct {
 // It is the responsibility of the caller to create a properly-formed data
 // object; this method blindly passes along the contents of the io.Reader.
 func (c *Client) UploadApp(app *App, data io.Reader) error {
-	endpoint := fmt.Sprintf("/api/v2/vagrant/applications/%s/%s/version",
+	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/version",
 		app.User, app.Name)
 
 	request, err := c.Request("POST", endpoint, nil)

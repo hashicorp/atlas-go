@@ -58,9 +58,9 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 
-	mux.HandleFunc("/api/v2/vagrant/applications", hs.vagrantCreateAppHandler)
-	mux.HandleFunc("/api/v2/vagrant/applications/", hs.vagrantCreateAppsHandler)
-	mux.HandleFunc("/api/v2/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
