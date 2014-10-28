@@ -1,10 +1,13 @@
 package harmony
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"testing"
@@ -51,7 +54,13 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
 
+	mux.HandleFunc("/_binstore/", hs.binstoreHandler)
+
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
+
+	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,14 +88,14 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
 	login, password := r.Form["user[login]"][0], r.Form["user[password]"][0]
 
 	if login == "sethloves" && password == "bacon" {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, `
       {
         "token": "pX4AQ5vO7T-xJrxsnvlB0cfeF-tGUX-A-280LPxoryhDAbwmox7PKinMgA1F6R3BKaT"
       }
     `)
 	} else {
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, `
       {
         "errors": {
@@ -97,4 +106,82 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
       }
     `)
 	}
+}
+
+func (hs *harmonyServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var aw appWrapper
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&aw); err != nil && err != io.EOF {
+		hs.t.Fatal(err)
+	}
+	app := aw.Application
+
+	if app.User == "hashicorp" && app.Name == "existing" {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		body, err := json.Marshal(&aw)
+		if err != nil {
+			hs.t.Fatal(err)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, string(body))
+	}
+}
+
+func (hs *harmonyServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	split := strings.Split(r.RequestURI, "/")
+	parts := split[len(split)-2:]
+	user, name := parts[0], parts[1]
+
+	if user == "hashicorp" && name == "existing" {
+		body, err := json.Marshal(&appWrapper{&App{
+			User: "hashicorp",
+			Name: "existing",
+		}})
+		if err != nil {
+			hs.t.Fatal(err)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, string(body))
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func (hs *harmonyServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Request) {
+	u := *hs.URL
+	u.Path = path.Join(u.Path, "_binstore/630e42d9-2364-2412-4121-18266770468e")
+
+	body, err := json.Marshal(&appVersion{
+		UploadPath: &u,
+		Token:      "630e42d9-2364-2412-4121-18266770468e",
+		Version:    125,
+	})
+	if err != nil {
+		hs.t.Fatal(err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, string(body))
+}
+
+func (hs *harmonyServer) binstoreHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PUT" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

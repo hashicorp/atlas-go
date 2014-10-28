@@ -88,7 +88,7 @@ func (c *Client) Login(username, password string) (string, error) {
 	}
 
 	// Make a request
-	request, err := c.NewRequest("POST", "/api/v1/authenticate", &RequestOptions{
+	request, err := c.Request("POST", "/api/v1/authenticate", &RequestOptions{
 		Body: strings.NewReader(url.Values{
 			"user[login]":       []string{username},
 			"user[password]":    []string{password},
@@ -110,7 +110,7 @@ func (c *Client) Login(username, password string) (string, error) {
 
 	// Decode the body
 	var tokenResponse struct{ Token string }
-	if err := decodeBody(response, &tokenResponse); err != nil {
+	if err := decodeJSON(response, &tokenResponse); err != nil {
 		return "", nil
 	}
 
@@ -134,10 +134,9 @@ type RequestOptions struct {
 	Body    io.Reader
 }
 
-// NewRequest creates a new HTTP request using the given verb and sub path.
-func (c *Client) NewRequest(verb, spath string, ro *RequestOptions) (*http.Request, error) {
-	// Ensure we have a RequestOptions struct (since passing nil is an acceptable
-	// use).
+// Request creates a new HTTP request using the given verb and sub path.
+func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request, error) {
+	// Ensure we have a RequestOptions struct (passing nil is an acceptable)
 	if ro == nil {
 		ro = new(RequestOptions)
 	}
@@ -147,10 +146,30 @@ func (c *Client) NewRequest(verb, spath string, ro *RequestOptions) (*http.Reque
 	u.Path = path.Join(c.URL.Path, spath)
 
 	// Add the token and other params
-	var params = make(url.Values)
 	if c.Token != "" {
-		params.Add("access_token", c.Token)
+		ro.Params["access_token"] = c.Token
 	}
+
+	return c.rawRequest(verb, &u, ro)
+}
+
+// rawRequest accepts a verb, URL, and RequestOptions struct and returns the
+// constructed http.Request and any errors that occurred
+func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.Request, error) {
+	if verb == "" {
+		return nil, fmt.Errorf("client: missing verb")
+	}
+
+	if u == nil {
+		return nil, fmt.Errorf("client: missing URL.url")
+	}
+
+	if ro == nil {
+		return nil, fmt.Errorf("client: missing RequestOptions")
+	}
+
+	// Add the token and other params
+	var params = make(url.Values)
 	for k, v := range ro.Params {
 		params.Add(k, v)
 	}
@@ -205,15 +224,15 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 func parseErr(resp *http.Response) error {
 	railsError := &RailsError{}
 
-	if err := decodeBody(resp, &railsError); err != nil {
+	if err := decodeJSON(resp, &railsError); err != nil {
 		return fmt.Errorf("Error parsing error body: %s", err)
 	}
 
 	return railsError
 }
 
-// decodeBody is used to JSON decode a body into an interface.
-func decodeBody(resp *http.Response, out interface{}) error {
+// decodeJSON is used to JSON decode a body into an interface.
+func decodeJSON(resp *http.Response, out interface{}) error {
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
 	return dec.Decode(out)
