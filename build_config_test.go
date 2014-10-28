@@ -21,7 +21,7 @@ func TestBuildConfig_fetches(t *testing.T) {
 	}
 
 	expected := &BuildConfig{
-		Username: "hashicorp",
+		User: "hashicorp",
 		Name:     "existing",
 	}
 
@@ -41,7 +41,7 @@ func TestCreateBuildConfigVersion(t *testing.T) {
 
 	data := new(bytes.Buffer)
 	err = client.CreateBuildConfigVersion(&BuildConfigVersion{
-		Username: "hashicorp",
+		User: "hashicorp",
 		Name:     "existing",
 		Builds: []BuildConfigBuild{
 			BuildConfigBuild{Name: "foo", Type: "ami"},

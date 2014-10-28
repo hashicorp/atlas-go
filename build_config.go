@@ -10,8 +10,8 @@ import (
 
 // BuildConfig represents a Packer build configuration.
 type BuildConfig struct {
-	// Username is the namespace under which the build config lives
-	Username string
+	// User is the namespace under which the build config lives
+	User string `json:"username"`
 
 	// Name is the actual name of the build config, unique in the scope
 	// of the username.
@@ -23,8 +23,8 @@ type BuildConfig struct {
 type BuildConfigVersion struct {
 	// The fields below are the username/name combo to uniquely identify
 	// a build config.
-	Username string
-	Name     string
+	User string `json:"username"`
+	Name string
 
 	// Builds is the list of builds that this version supports.
 	Builds []BuildConfigBuild
@@ -66,7 +66,7 @@ func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
 // and uploads the template associated with it.
 func (c *Client) CreateBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) error {
 	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/version",
-		v.Username, v.Name)
+		v.User, v.Name)
 
 	var bodyData bcCreateWrapper
 	bodyData.Version.Builds = v.Builds
