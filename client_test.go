@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+func TestDefaultClient_url(t *testing.T) {
+	client := DefaultClient()
+
+	if client.URL.String() != harmonyURL {
+		t.Fatal("expected %q to be %q", client.URL.String(), harmonyURL)
+	}
+}
+
 func TestNewClient_badURL(t *testing.T) {
 	_, err := NewClient("")
 	if err == nil {

@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const harmonyURL = "https://harmony.hashicorp.com"
+
 // RailsError represents an error that was returned from the Rails server.
 type RailsError struct {
 	Errors map[string][]string `json:"errors"`
@@ -40,6 +42,16 @@ type Client struct {
 
 	// HTTPClient is the underlying http client with which to make requests.
 	HTTPClient *http.Client
+}
+
+// DefaultClient returns a client that connects to the Harmony API.
+func DefaultClient() *Client {
+	client, err := NewClient(harmonyURL)
+	if err != nil {
+		panic(err)
+	}
+
+	return client
 }
 
 // NewClient creates a new Harmony Client from the given URL (as a string). If
