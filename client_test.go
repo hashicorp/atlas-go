@@ -133,7 +133,7 @@ func TestRequest_getsData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	request, err := client.NewRequest("GET", "/_status/200", nil)
+	request, err := client.Request("GET", "/_status/200", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestRequest_returnsError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	request, err := client.NewRequest("GET", "/_status/404", nil)
+	request, err := client.Request("GET", "/_status/404", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestRequestJSON_decodesData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	request, err := client.NewRequest("GET", "/_json", nil)
+	request, err := client.Request("GET", "/_json", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
