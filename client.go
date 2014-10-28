@@ -110,7 +110,7 @@ func (c *Client) Login(username, password string) (string, error) {
 
 	// Decode the body
 	var tokenResponse struct{ Token string }
-	if err := decodeBody(response, &tokenResponse); err != nil {
+	if err := decodeJSON(response, &tokenResponse); err != nil {
 		return "", nil
 	}
 
@@ -205,15 +205,15 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 func parseErr(resp *http.Response) error {
 	railsError := &RailsError{}
 
-	if err := decodeBody(resp, &railsError); err != nil {
+	if err := decodeJSON(resp, &railsError); err != nil {
 		return fmt.Errorf("Error parsing error body: %s", err)
 	}
 
 	return railsError
 }
 
-// decodeBody is used to JSON decode a body into an interface.
-func decodeBody(resp *http.Response, out interface{}) error {
+// decodeJSON is used to JSON decode a body into an interface.
+func decodeJSON(resp *http.Response, out interface{}) error {
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
 	return dec.Decode(out)

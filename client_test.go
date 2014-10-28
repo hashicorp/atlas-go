@@ -188,7 +188,7 @@ func TestRequestJSON_decodesData(t *testing.T) {
 	}
 
 	var decoded struct{ Ok bool }
-	if err := decodeBody(response, &decoded); err != nil {
+	if err := decodeJSON(response, &decoded); err != nil {
 		t.Fatal(err)
 	}
 
