@@ -79,3 +79,31 @@ func TestCreateApp_returnsErrorExistingApp(t *testing.T) {
 		t.Fatal("expected error, but nothing was returned")
 	}
 }
+
+func TestCreateAppVersion_createsAndReturnsVersion(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	av, err := client.CreateAppVersion(&App{
+		User: "hashicorp",
+		Name: "existing",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "https://binstore.hashicorp.com/630e42d9-2364-2412-4121-18266770468e"
+	if av.UploadPath != expected {
+		t.Errorf("expected %q to be %q", av.UploadPath, expected)
+	}
+
+	expected = "630e42d9-2364-2412-4121-18266770468e"
+	if av.Token != expected {
+		t.Errorf("expected %q to be %q", av.Token, expected)
+	}
+}

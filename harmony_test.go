@@ -57,6 +57,7 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v2/vagrant/applications", hs.vagrantCreateApplicationHandler)
 	mux.HandleFunc("/api/v2/vagrant/applications/", hs.vagrantCreateApplicationsHandler)
+	mux.HandleFunc("/api/v2/vagrant/applications/hashicorp/existing/version", hs.vagrantCreateApplicationVersionHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -154,4 +155,17 @@ func (hs *harmonyServer) vagrantCreateApplicationsHandler(w http.ResponseWriter,
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func (hs *harmonyServer) vagrantCreateApplicationVersionHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := json.Marshal(&AppVersion{
+		UploadPath: "https://binstore.hashicorp.com/630e42d9-2364-2412-4121-18266770468e",
+		Token:      "630e42d9-2364-2412-4121-18266770468e",
+	})
+	if err != nil {
+		hs.t.Fatal(err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, string(body))
 }
