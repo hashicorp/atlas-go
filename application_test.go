@@ -1,6 +1,8 @@
 package harmony
 
 import (
+	"bytes"
+	"path"
 	"testing"
 )
 
@@ -105,5 +107,27 @@ func TestCreateAppVersion_createsAndReturnsVersion(t *testing.T) {
 	expected = "630e42d9-2364-2412-4121-18266770468e"
 	if av.Token != expected {
 		t.Errorf("expected %q to be %q", av.Token, expected)
+	}
+}
+
+func TestUploadAppVersion_createsVersion(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buff := new(bytes.Buffer)
+	u := *server.URL
+	u.Path = path.Join(server.URL.Path, "_binstore")
+	av := &AppVersion{
+		UploadPath: u.String(),
+		Token:      "abcd-1234",
+	}
+	err = client.UploadAppVersion(av, buff)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

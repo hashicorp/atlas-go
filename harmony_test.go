@@ -53,6 +53,8 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
 
+	mux.HandleFunc("/_binstore", hs.binstoreHandler)
+
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 
 	mux.HandleFunc("/api/v2/vagrant/applications", hs.vagrantCreateApplicationHandler)
@@ -168,4 +170,13 @@ func (hs *harmonyServer) vagrantCreateApplicationVersionHandler(w http.ResponseW
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, string(body))
+}
+
+func (hs *harmonyServer) binstoreHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PUT" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
