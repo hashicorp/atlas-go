@@ -78,57 +78,50 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 	return aw.Application, nil
 }
 
-// AppVersion represents a specific version of an App in Harmony. It is actually
+// appVersion represents a specific version of an App in Harmony. It is actually
 // an upload container/wrapper.
-type AppVersion struct {
-	UploadPath string `json:"upload_path"`
-	Token      string `json:"token"`
+type appVersion struct {
+	UploadPath *url.URL `json:"upload_path"`
+	Token      string   `json:"token"`
+	Version    uint64   `json:"version"`
 }
 
-// CreateVersion makes a new AppVersion for the App. If the server is unable to
-// create a new version, an error is returned.
-func (c *Client) CreateAppVersion(app *App) (*AppVersion, error) {
+// UploadApp creates and uploads a new version for the App. If the server is
+// find the application, an error is returned. If the server does not accept the
+// data, an error is returned.
+//
+// It is the responsibility of the caller to create a properly-formed data
+// object; this method blindly passes along the contents of the io.Reader.
+func (c *Client) UploadApp(app *App, data io.Reader) error {
 	endpoint := fmt.Sprintf("/api/v2/vagrant/applications/%s/%s/version",
 		app.User, app.Name)
 
 	request, err := c.Request("POST", endpoint, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	response, err := checkResp(c.HTTPClient.Do(request))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var av AppVersion
+	var av appVersion
 	if err := decodeJSON(response, &av); err != nil {
-		return nil, err
-	}
-
-	return &av, nil
-}
-
-// UploadAppVersion accepts data as an io.Reader and PUTs data to the
-// AppVersion's UploadPath. If any errors occur before or during the upload,
-// they are returned.
-func (client *Client) UploadAppVersion(av *AppVersion, data io.Reader) error {
-	u, err := url.Parse(av.UploadPath)
-	if err != nil {
 		return err
 	}
 
 	// Use the private rawRequest function here to avoid appending the
 	// access_token and being restricted to the Harmony namespace, since binstore
 	// lives under a different root URL.
-	request, err := client.rawRequest("PUT", u, &RequestOptions{
+	request, err = c.rawRequest("PUT", av.UploadPath, &RequestOptions{
 		Body: data,
 	})
 	if err != nil {
 		return err
 	}
 
-	if _, err := checkResp(client.HTTPClient.Do(request)); err != nil {
+	if _, err := checkResp(c.HTTPClient.Do(request)); err != nil {
 		return err
 	}
 

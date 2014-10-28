@@ -2,7 +2,6 @@ package harmony
 
 import (
 	"bytes"
-	"path"
 	"testing"
 )
 
@@ -82,7 +81,7 @@ func TestCreateApp_returnsErrorExistingApp(t *testing.T) {
 	}
 }
 
-func TestCreateAppVersion_createsAndReturnsVersion(t *testing.T) {
+func TestUploadApp_createsAndReturnsVersion(t *testing.T) {
 	server := newTestHarmonyServer(t)
 	defer server.Stop()
 
@@ -91,42 +90,12 @@ func TestCreateAppVersion_createsAndReturnsVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	av, err := client.CreateAppVersion(&App{
+	app := &App{
 		User: "hashicorp",
 		Name: "existing",
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
-
-	expected := "https://binstore.hashicorp.com/630e42d9-2364-2412-4121-18266770468e"
-	if av.UploadPath != expected {
-		t.Errorf("expected %q to be %q", av.UploadPath, expected)
-	}
-
-	expected = "630e42d9-2364-2412-4121-18266770468e"
-	if av.Token != expected {
-		t.Errorf("expected %q to be %q", av.Token, expected)
-	}
-}
-
-func TestUploadAppVersion_createsVersion(t *testing.T) {
-	server := newTestHarmonyServer(t)
-	defer server.Stop()
-
-	client, err := NewClient(server.URL.String())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	buff := new(bytes.Buffer)
-	u := *server.URL
-	u.Path = path.Join(server.URL.Path, "_binstore")
-	av := &AppVersion{
-		UploadPath: u.String(),
-		Token:      "abcd-1234",
-	}
-	err = client.UploadAppVersion(av, buff)
+	data := new(bytes.Buffer)
+	err = client.UploadApp(app, data)
 	if err != nil {
 		t.Fatal(err)
 	}

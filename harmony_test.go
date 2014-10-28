@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"testing"
@@ -53,13 +54,13 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
 
-	mux.HandleFunc("/_binstore", hs.binstoreHandler)
+	mux.HandleFunc("/_binstore/", hs.binstoreHandler)
 
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 
-	mux.HandleFunc("/api/v2/vagrant/applications", hs.vagrantCreateApplicationHandler)
-	mux.HandleFunc("/api/v2/vagrant/applications/", hs.vagrantCreateApplicationsHandler)
-	mux.HandleFunc("/api/v2/vagrant/applications/hashicorp/existing/version", hs.vagrantCreateApplicationVersionHandler)
+	mux.HandleFunc("/api/v2/vagrant/applications", hs.vagrantCreateAppHandler)
+	mux.HandleFunc("/api/v2/vagrant/applications/", hs.vagrantCreateAppsHandler)
+	mux.HandleFunc("/api/v2/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +108,7 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (hs *harmonyServer) vagrantCreateApplicationHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *harmonyServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -133,7 +134,7 @@ func (hs *harmonyServer) vagrantCreateApplicationHandler(w http.ResponseWriter, 
 	}
 }
 
-func (hs *harmonyServer) vagrantCreateApplicationsHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *harmonyServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -159,10 +160,14 @@ func (hs *harmonyServer) vagrantCreateApplicationsHandler(w http.ResponseWriter,
 	}
 }
 
-func (hs *harmonyServer) vagrantCreateApplicationVersionHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := json.Marshal(&AppVersion{
-		UploadPath: "https://binstore.hashicorp.com/630e42d9-2364-2412-4121-18266770468e",
+func (hs *harmonyServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Request) {
+	u := *hs.URL
+	u.Path = path.Join(u.Path, "_binstore/630e42d9-2364-2412-4121-18266770468e")
+
+	body, err := json.Marshal(&appVersion{
+		UploadPath: &u,
 		Token:      "630e42d9-2364-2412-4121-18266770468e",
+		Version:    125,
 	})
 	if err != nil {
 		hs.t.Fatal(err)
