@@ -2,6 +2,7 @@ package harmony
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,9 @@ import (
 )
 
 const harmonyURL = "https://harmony.hashicorp.com"
+
+// ErrNotFound is the error returned if a 404 is returned by an API request.
+var ErrNotFound = errors.New("resource not found")
 
 // RailsError represents an error that was returned from the Rails server.
 type RailsError struct {
@@ -211,21 +215,23 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 		return resp, err
 	}
 
-	switch i := resp.StatusCode; {
-	case i == 200:
+	switch resp.StatusCode {
+	case 200:
 		return resp, nil
-	case i == 201:
+	case 201:
 		return resp, nil
-	case i == 202:
+	case 202:
 		return resp, nil
-	case i == 204:
+	case 204:
 		return resp, nil
-	case i == 422:
+	case 422:
 		return nil, parseErr(resp)
-	case i == 400:
+	case 400:
 		return nil, parseErr(resp)
-	case i == 401:
+	case 401:
 		return nil, parseErr(resp)
+	case 404:
+		return nil, ErrNotFound
 	default:
 		return nil, fmt.Errorf("client: %s", resp.Status)
 	}
