@@ -170,9 +170,8 @@ func TestRequest_returnsError(t *testing.T) {
 		t.Fatal("expected error, but nothing was returned")
 	}
 
-	expected := "404 Not Found"
-	if !strings.Contains(err.Error(), expected) {
-		t.Fatalf("expected %q to contain %q", err.Error(), expected)
+	if err != ErrNotFound {
+		t.Fatalf("bad error: %#v", err)
 	}
 }
 
