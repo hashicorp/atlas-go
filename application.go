@@ -23,6 +23,11 @@ type App struct {
 	Name string `json:"name"`
 }
 
+// Slug returns the slug format for this App (User/Name)
+func (a *App) Slug() string {
+	return fmt.Sprintf("%s/%s", a.User, a.Name)
+}
+
 // App gets the App by the given user space and name. In the event the App is
 // not found (404), or for any other non-200 responses, an error is returned.
 func (c *Client) App(user, name string) (*App, error) {
