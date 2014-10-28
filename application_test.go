@@ -5,6 +5,18 @@ import (
 	"testing"
 )
 
+func TestSlug_returnsSlug(t *testing.T) {
+	app := &App{
+		User: "hashicorp",
+		Name: "project",
+	}
+
+	expected := "hashicorp/project"
+	if app.Slug() != expected {
+		t.Fatalf("expected %q to be %q", app.Slug(), expected)
+	}
+}
+
 func TestApp_fetchesApp(t *testing.T) {
 	server := newTestHarmonyServer(t)
 	defer server.Stop()
