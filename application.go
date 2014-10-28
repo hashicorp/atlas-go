@@ -5,25 +5,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 )
 
-// Application represents a single instance of an Application on the Harmony
-// server.
-type Application struct {
+// AppWraper
+type AppWrapper struct {
+	Application *App `json:"application"`
+}
+
+// App represents a single instance of an application on the Harmony server.
+type App struct {
 	// User is the namespace (username or organization) under which the
-	// Application resides
+	// Harmony application resides
 	User string `json:"user"`
 
-	// Name is the name of the Application
+	// Name is the name of the application
 	Name string `json:"name"`
 }
 
-// Application gets the Application by the given user space and name. In the
-// event the Application is not found, or for any other non-200 responses, an
-// error is returned.
-func (c *Client) Application(user, name string) (*Application, error) {
+// App gets the App by the given user space and name. In the event the App is
+// not found (404), or for any other non-200 responses, an error is returned.
+func (c *Client) App(user, name string) (*App, error) {
 	endpoint := fmt.Sprintf("/api/v2/vagrant/applications/%s/%s", user, name)
-	request, err := c.NewRequest("HEAD", endpoint, nil)
+	request, err := c.Request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33,28 +37,28 @@ func (c *Client) Application(user, name string) (*Application, error) {
 		return nil, err
 	}
 
-	var app Application
-	if err := decodeJSON(response, &app); err != nil {
+	var aw AppWrapper
+	if err := decodeJSON(response, &aw); err != nil {
 		return nil, err
 	}
 
-	return &app, nil
+	return aw.Application, nil
 }
 
-// CreateApplication creates a new Application under the given user with
-// the given name. If the Application is created successfully, it is returned.
-// If the server returns any errors, an error is returned.
-func (c *Client) CreateApplication(user, name string) (*Application, error) {
-	body, err := json.Marshal(&Application{
+// CreateApp creates a new App under the given user with the given name. If the
+// App is created successfully, it is returned. If the server returns any
+// errors, an error is returned.
+func (c *Client) CreateApp(user, name string) (*App, error) {
+	body, err := json.Marshal(&AppWrapper{&App{
 		User: user,
 		Name: name,
-	})
+	}})
 	if err != nil {
 		return nil, err
 	}
 
 	endpoint := "/api/v2/vagrant/applications"
-	request, err := c.NewRequest("POST", endpoint, &RequestOptions{
+	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewBuffer(body),
 	})
 	if err != nil {
@@ -66,29 +70,28 @@ func (c *Client) CreateApplication(user, name string) (*Application, error) {
 		return nil, err
 	}
 
-	var app Application
-	if err := decodeJSON(response, &app); err != nil {
+	var aw AppWrapper
+	if err := decodeJSON(response, &aw); err != nil {
 		return nil, err
 	}
 
-	return &app, nil
+	return aw.Application, nil
 }
 
-// ApplicationVersion represents a specific version of an Application in
-// Harmony. It is actually an upload container/wrapper.
-type ApplicationVersion struct {
+// AppVersion represents a specific version of an App in Harmony. It is actually
+// an upload container/wrapper.
+type AppVersion struct {
 	UploadPath string `json:"upload_path"`
 	Token      string `json:"token"`
 }
 
-// CreateVersion makes a new ApplicationVersion for the Application. There are
-// no parameters to this method. If the server is unable to create a new
-// version, an error is returned.
-func (c *Client) CreateApplicationVersion(app *Application) (*ApplicationVersion, error) {
+// CreateVersion makes a new AppVersion for the App. If the server is unable to
+// create a new version, an error is returned.
+func (c *Client) CreateAppVersion(app *App) (*AppVersion, error) {
 	endpoint := fmt.Sprintf("/api/v2/vagrant/applications/%s/%s/version",
 		app.User, app.Name)
 
-	request, err := c.NewRequest("POST", endpoint, nil)
+	request, err := c.Request("POST", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +101,7 @@ func (c *Client) CreateApplicationVersion(app *Application) (*ApplicationVersion
 		return nil, err
 	}
 
-	var av ApplicationVersion
+	var av AppVersion
 	if err := decodeJSON(response, &av); err != nil {
 		return nil, err
 	}
@@ -106,28 +109,28 @@ func (c *Client) CreateApplicationVersion(app *Application) (*ApplicationVersion
 	return &av, nil
 }
 
-// Upload accepts data as an io.Reader and PUTs data to the ApplicationVersion's
-// UploadPath. If any errors occur before or during the upload, they are
-// returned.
-func (av *ApplicationVersion) Upload(data io.Reader) error {
-	client, err := NewClient(av.UploadPath)
+// UploadAppVersion accepts data as an io.Reader and PUTs data to the
+// AppVersion's UploadPath. If any errors occur before or during the upload,
+// they are returned.
+func (client *Client) UploadAppVersion(av *AppVersion, data io.Reader) error {
+	u, err := url.Parse(av.UploadPath)
 	if err != nil {
 		return err
 	}
 
-	request, err := client.NewRequest("PUT", "/", &RequestOptions{
+	// Use the private rawRequest function here to avoid appending the
+	// access_token and being restricted to the Harmony namespace, since binstore
+	// lives under a different root URL.
+	request, err := client.rawRequest("PUT", u, &RequestOptions{
 		Body: data,
 	})
 	if err != nil {
 		return err
 	}
 
-	response, err := checkResp(client.HTTPClient.Do(request))
-	if err != nil {
+	if _, err := checkResp(client.HTTPClient.Do(request)); err != nil {
 		return err
 	}
-
-	_ = response // TODO
 
 	return nil
 }
