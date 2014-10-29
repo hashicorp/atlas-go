@@ -15,9 +15,22 @@ import (
 
 // ArchiveOpts are the options for defining how the archive will be built.
 type ArchiveOpts struct {
+	// Exclude and Include are filters of files to include/exclude in
+	// the archive when creating it from a directory. These filters should
+	// be relative to the packaging directory and should be basic glob
+	// patterns.
 	Exclude []string
 	Include []string
-	VCS     bool
+
+	// Extra is a mapping of extra files to include within the archive. The
+	// key should be the path within the archive and the value should be
+	// an absolute path to the file to put into the archive. These extra
+	// files will override any other files in the archive.
+	Extra map[string]string
+
+	// VCS, if true, will detect and use a VCS system to determien what
+	// files to include the archive.
+	VCS bool
 }
 
 // IsSet says whether any options were set.
@@ -209,8 +222,16 @@ func archiveDir(
 	// to other goroutines.
 	errCh := make(chan error, 1)
 	go func() {
+		// First, walk the path and do the normal files
 		werr := filepath.Walk(root, walkFn)
+		if werr != nil {
+			goto CLEANUP
+		}
 
+		// If that succeeded, handle the extra files
+		werr = copyExtras(tarW, opts.Extra)
+
+	CLEANUP:
 		// Attempt to close all the things. If we get an error on the way
 		// and we haven't had an error yet, then record that as the critical
 		// error. But we still try to close everything.
@@ -242,4 +263,53 @@ func archiveDir(
 	}()
 
 	return pr, errCh, nil
+}
+
+func copyExtras(w *tar.Writer, extra map[string]string) error {
+	for entry, path := range extra {
+		info, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		// Read the symlink target. We don't track the error because
+		// it doesn't matter if there is an error.
+		target, _ := os.Readlink(path)
+
+		// Build the file header for the tar entry
+		header, err := tar.FileInfoHeader(info, target)
+		if err != nil {
+			return fmt.Errorf(
+				"Failed creating archive header: %s", path)
+		}
+
+		// Modify the header to properly be the full subpath
+		header.Name = entry
+
+		// Write the header first to the archive.
+		if err := w.WriteHeader(header); err != nil {
+			return fmt.Errorf(
+				"Failed writing archive header: %s", path)
+		}
+
+		// If it is a directory, then we're done (no body to write)
+		if info.IsDir() {
+			return nil
+		}
+
+		// Open the target file to write the data
+		f, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf(
+				"Failed opening file '%s' to write compressed archive.", path)
+		}
+		defer f.Close()
+
+		if _, err = io.Copy(w, f); err != nil {
+			return fmt.Errorf(
+				"Failed copying file to archive: %s", path)
+		}
+	}
+
+	return nil
 }

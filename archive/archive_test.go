@@ -93,6 +93,31 @@ func TestArchive_fileWithOpts(t *testing.T) {
 	}
 }
 
+func TestArchive_dirExtra(t *testing.T) {
+	opts := &ArchiveOpts{
+		Extra: map[string]string{
+			"hello.txt": filepath.Join(
+				testFixture("archive-subdir"), "subdir", "hello.txt"),
+		},
+	}
+
+	r, errCh, err := Archive(testFixture("archive-flat"), opts)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"baz.txt",
+		"foo.txt",
+		"hello.txt",
+	}
+
+	entries := testArchive(t, r, errCh)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_dirNoVCS(t *testing.T) {
 	r, errCh, err := Archive(testFixture("archive-flat"), new(ArchiveOpts))
 	if err != nil {
