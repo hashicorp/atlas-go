@@ -64,7 +64,7 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 
 	endpoint := "/api/v1/vagrant/applications"
 	request, err := c.Request("POST", endpoint, &RequestOptions{
-		Body: bytes.NewBuffer(body),
+		Body: bytes.NewReader(body),
 	})
 	if err != nil {
 		return nil, err

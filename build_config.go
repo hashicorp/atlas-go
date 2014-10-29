@@ -78,7 +78,7 @@ func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) 
 	}
 
 	request, err := c.Request("POST", endpoint, &RequestOptions{
-		Body: bytes.NewBuffer(body),
+		Body: bytes.NewReader(body),
 	})
 	if err != nil {
 		return err
