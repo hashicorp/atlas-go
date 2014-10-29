@@ -303,9 +303,10 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 			return fmt.Errorf(
 				"Failed opening file '%s' to write compressed archive.", path)
 		}
-		defer f.Close()
 
-		if _, err = io.Copy(w, f); err != nil {
+		_, err = io.Copy(w, f)
+		f.Close()
+		if err != nil {
 			return fmt.Errorf(
 				"Failed copying file to archive: %s", path)
 		}
