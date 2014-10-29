@@ -31,6 +31,11 @@ var VCSList = []*VCS{
 		Detect: []string{".git/"},
 		Files:  vcsFilesCmd("git", "ls-files"),
 	},
+	&VCS{
+		Name:   "svn",
+		Detect: []string{".svn/"},
+		Files:  vcsFilesCmd("svn", "ls"),
+	},
 }
 
 // vcsDetect detects the VCS that is used for path.
