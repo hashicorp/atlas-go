@@ -30,7 +30,22 @@ func TestBuildConfig_fetches(t *testing.T) {
 	}
 }
 
-func TestCreateBuildConfigVersion(t *testing.T) {
+func TestCreateBuildConfig(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = client.CreateBuildConfig("hashicorp", "existing")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUploadBuildConfigVersion(t *testing.T) {
 	server := newTestHarmonyServer(t)
 	defer server.Stop()
 
@@ -40,7 +55,7 @@ func TestCreateBuildConfigVersion(t *testing.T) {
 	}
 
 	data := new(bytes.Buffer)
-	err = client.CreateBuildConfigVersion(&BuildConfigVersion{
+	err = client.UploadBuildConfigVersion(&BuildConfigVersion{
 		User: "hashicorp",
 		Name: "existing",
 		Builds: []BuildConfigBuild{

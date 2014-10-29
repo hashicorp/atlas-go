@@ -62,6 +62,31 @@ func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
 	return w.BuildConfig, nil
 }
 
+// CreateBuildConfig creates a new build configuration.
+func (c *Client) CreateBuildConfig(user, name string) error {
+	endpoint := "/api/v1/packer/build-configurations"
+
+	body, err := json.Marshal(&bcWrapper{
+		BuildConfig: &BuildConfig{
+			User: user,
+			Name: name,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	request, err := c.Request("POST", endpoint, &RequestOptions{
+		Body: bytes.NewReader(body),
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = checkResp(c.HTTPClient.Do(request))
+	return err
+}
+
 // UploadBuildConfigVersion creates a single build configuration version
 // and uploads the template associated with it.
 //
