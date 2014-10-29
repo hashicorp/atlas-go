@@ -62,6 +62,40 @@ func TestArchiveOptsIsSet(t *testing.T) {
 	}
 }
 
+func TestArchive_file(t *testing.T) {
+	path := filepath.Join(testFixture("archive-file"), "foo.txt")
+	r, errCh, err := Archive(path, new(ArchiveOpts))
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"foo.txt",
+	}
+
+	entries := testArchive(t, r, errCh)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
+func TestArchive_fileCompressed(t *testing.T) {
+	path := filepath.Join(testFixture("archive-file-compressed"), "file.tar.gz")
+	r, errCh, err := Archive(path, new(ArchiveOpts))
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"./foo.txt",
+	}
+
+	entries := testArchive(t, r, errCh)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_fileNoExist(t *testing.T) {
 	tf := tempFile(t)
 	if err := os.Remove(tf); err != nil {

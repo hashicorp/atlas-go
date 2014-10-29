@@ -73,10 +73,35 @@ func Archive(
 
 func archiveFile(
 	path string, opts *ArchiveOpts) (io.ReadCloser, <-chan error, error) {
-	// TODO: if file is already gzipped, then send it along
-	// TODO: if file is not gzipped, then... error? or do we tar + gzip?
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return nil, nil, nil
+	if _, err := gzip.NewReader(f); err == nil {
+		// Reset the read offset for future reading
+		if _, err := f.Seek(0, 0); err != nil {
+			return nil, nil, err
+		}
+
+		// This is a gzip file, let it through.
+		return f, nil, nil
+	}
+
+	// Close the file, no use for it anymore
+	f.Close()
+
+	// We have a single file that is not gzipped. Compress it.
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Act like we're compressing a directory, but only include this one
+	// file.
+	return archiveDir(filepath.Dir(path), &ArchiveOpts{
+		Include: []string{filepath.Base(path)},
+	})
 }
 
 func archiveDir(
