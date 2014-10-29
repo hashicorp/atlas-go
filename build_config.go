@@ -62,9 +62,11 @@ func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
 	return w.BuildConfig, nil
 }
 
-// CreateBuildConfigVersion creates a single build configuration version
+// UploadBuildConfigVersion creates a single build configuration version
 // and uploads the template associated with it.
-func (c *Client) CreateBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) error {
+//
+// Actual API: "Create Build Config Version"
+func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) error {
 	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/version",
 		v.User, v.Name)
 
