@@ -61,6 +61,11 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
+
+	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing", hs.vagrantBCExistingHandler)
+	mux.HandleFunc(
+		"/api/v1/packer/build-configurations/hashicorp/existing/version",
+		hs.vagrantBCCreateHandler)
 }
 
 func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,6 +111,50 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
       }
     `)
 	}
+}
+
+func (hs *harmonyServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var wrapper bcCreateWrapper
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&wrapper); err != nil && err != io.EOF {
+		hs.t.Fatal(err)
+	}
+	builds := wrapper.Version.Builds
+
+	if len(builds) == 0 {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	uploadPath := hs.URL.String() + "/_binstore/"
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `
+	{
+		"upload_path": "%s"
+	}
+	`, uploadPath)
+}
+
+func (hs *harmonyServer) vagrantBCExistingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+	{
+		"build_configuration": {
+			"username": "hashicorp",
+			"name": "existing"
+		}
+	}
+	`)
 }
 
 func (hs *harmonyServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Request) {
