@@ -1,3 +1,5 @@
+// archive is package that helps create archives in a format that
+// Harmony expects with its various upload endpoints.
 package archive
 
 import (
