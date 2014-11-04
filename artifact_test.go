@@ -1,6 +1,7 @@
 package harmony
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -89,5 +90,26 @@ func TestArtifactSearch_metadata(t *testing.T) {
 
 	if len(vs) != 1 {
 		t.Fatalf("bad: %#v", vs)
+	}
+}
+
+func TestUploadArtifact(t *testing.T) {
+	server := newTestHarmonyServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data := new(bytes.Buffer)
+	_, err = client.UploadArtifact(&UploadArtifactOpts{
+		User: "hashicorp",
+		Name: "existing",
+		Type: "amazon-ami",
+		File: data,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

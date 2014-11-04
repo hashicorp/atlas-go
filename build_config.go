@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 )
 
 // BuildConfig represents a Packer build configuration.
@@ -119,22 +118,7 @@ func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) 
 		return err
 	}
 
-	uploadUrl, err := url.Parse(data.UploadPath)
-	if err != nil {
-		return err
-	}
-
-	// Use the private rawRequest function here to avoid appending the
-	// access_token and being restricted to the Harmony namespace, since binstore
-	// lives under a different root URL.
-	request, err = c.rawRequest("PUT", uploadUrl, &RequestOptions{
-		Body: tpl,
-	})
-	if err != nil {
-		return err
-	}
-
-	if _, err := checkResp(c.HTTPClient.Do(request)); err != nil {
+	if err := c.putFile(data.UploadPath, tpl); err != nil {
 		return err
 	}
 

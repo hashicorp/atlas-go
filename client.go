@@ -169,6 +169,24 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 	return c.rawRequest(verb, &u, ro)
 }
 
+func (c *Client) putFile(rawUrl string, r io.Reader) error {
+	url, err := url.Parse(rawUrl)
+	if err != nil {
+		return err
+	}
+
+	request, err := c.rawRequest("PUT", url, &RequestOptions{Body: r})
+	if err != nil {
+		return err
+	}
+
+	if _, err := checkResp(c.HTTPClient.Do(request)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // rawRequest accepts a verb, URL, and RequestOptions struct and returns the
 // constructed http.Request and any errors that occurred
 func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.Request, error) {

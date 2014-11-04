@@ -1,6 +1,7 @@
 package harmony
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -59,6 +60,9 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 
 	mux.HandleFunc("/api/v1/artifacts/hashicorp/existing", hs.vagrantArtifactExistingHandler)
+	mux.HandleFunc(
+		"/api/v1/artifacts/hashicorp/existing/amazon-ami",
+		hs.vagrantArtifactUploadHandler)
 	mux.HandleFunc(
 		"/api/v1/artifacts/hashicorp/existing1/amazon-ami/search",
 		hs.vagrantArtifactSearchHandler1)
@@ -185,6 +189,35 @@ func (hs *harmonyServer) vagrantArtifactSearchHandler2(w http.ResponseWriter, r 
 		}]
 	}
 	`)
+}
+
+func (hs *harmonyServer) vagrantArtifactUploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r.Body); err != nil {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if buf.Len() == 0 {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	uploadPath := hs.URL.String() + "/_binstore/"
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `
+	{
+		"version": {
+			"upload_path": "%s"
+		}
+	}
+	`, uploadPath)
 }
 
 func (hs *harmonyServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Request) {

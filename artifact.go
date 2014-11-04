@@ -1,7 +1,10 @@
 package harmony
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 )
 
 // Artifact represents a single instance of an artifact.
@@ -10,7 +13,7 @@ type Artifact struct {
 	// of both into "username/name"
 	User string `json:"username"`
 	Name string
-	Tag  string
+	Tag  string `json:",omitempty"`
 }
 
 // ArtifactVersion represents a single version of an artifact.
@@ -33,6 +36,26 @@ type ArtifactSearchOpts struct {
 
 	Version  string
 	Metadata map[string]string
+}
+
+// UploadArtifactOpts are the options used to upload an artifact.
+type UploadArtifactOpts struct {
+	User     string
+	Name     string
+	Type     string
+	ID       string
+	File     io.Reader
+	Metadata map[string]string
+}
+
+func (o *UploadArtifactOpts) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"version": map[string]interface{}{
+			"id":       o.ID,
+			"file":     o.File != nil,
+			"metadata": o.Metadata,
+		},
+	})
 }
 
 // This is the value that should be used for metadata in ArtifactSearchOpts
@@ -99,10 +122,79 @@ func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, e
 	return w.Versions, nil
 }
 
+func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
+	body, err := json.Marshal(&artifactWrapper{&Artifact{
+		User: user,
+		Name: name,
+	}})
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := "/api/v1/artifacts"
+	request, err := c.Request("POST", endpoint, &RequestOptions{
+		Body: bytes.NewReader(body),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := checkResp(c.HTTPClient.Do(request))
+	if err != nil {
+		return nil, err
+	}
+
+	var aw artifactWrapper
+	if err := decodeJSON(response, &aw); err != nil {
+		return nil, err
+	}
+
+	return aw.Artifact, nil
+}
+
+func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, error) {
+	endpoint := fmt.Sprintf("/api/v1/artifacts/%s/%s/%s",
+		opts.User, opts.Name, opts.Type)
+
+	body, err := json.Marshal(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := c.Request("POST", endpoint, &RequestOptions{
+		Body: bytes.NewReader(body),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := checkResp(c.HTTPClient.Do(request))
+	if err != nil {
+		return nil, err
+	}
+
+	var aw artifactVersionWrapper
+	if err := decodeJSON(response, &aw); err != nil {
+		return nil, err
+	}
+
+	if opts.File != nil {
+		if err := c.putFile(aw.Version.UploadPath, opts.File); err != nil {
+			return nil, err
+		}
+	}
+
+	return aw.Version, nil
+}
+
 type artifactWrapper struct {
 	Artifact *Artifact
 }
 
 type artifactSearchWrapper struct {
 	Versions []*ArtifactVersion
+}
+
+type artifactVersionWrapper struct {
+	Version *ArtifactVersion
 }
