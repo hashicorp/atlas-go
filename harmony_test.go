@@ -58,6 +58,14 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 
+	mux.HandleFunc("/api/v1/artifacts/hashicorp/existing", hs.vagrantArtifactExistingHandler)
+	mux.HandleFunc(
+		"/api/v1/artifacts/hashicorp/existing1/amazon-ami/search",
+		hs.vagrantArtifactSearchHandler1)
+	mux.HandleFunc(
+		"/api/v1/artifacts/hashicorp/existing2/amazon-ami/search",
+		hs.vagrantArtifactSearchHandler2)
+
 	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
@@ -112,6 +120,71 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
       }
     `)
 	}
+}
+
+func (hs *harmonyServer) vagrantArtifactExistingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+	{
+		"artifact": {
+			"username": "hashicorp",
+			"name": "existing",
+			"tag": "hashicorp/existing"
+		}
+	}
+	`)
+}
+
+func (hs *harmonyServer) vagrantArtifactSearchHandler1(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+	{
+		"versions": [{
+			"username": "hashicorp",
+			"name": "existing",
+			"tag": "hashicorp/existing"
+		}]
+	}
+	`)
+}
+
+func (hs *harmonyServer) vagrantArtifactSearchHandler2(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.Form.Get("metadata.1.key") == "" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if r.Form.Get("metadata.2.key") == "" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+	{
+		"versions": [{
+			"username": "hashicorp",
+			"name": "existing",
+			"tag": "hashicorp/existing"
+		}]
+	}
+	`)
 }
 
 func (hs *harmonyServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Request) {
