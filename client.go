@@ -1,8 +1,8 @@
 package harmony
 
 import (
-	"encoding/json"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
