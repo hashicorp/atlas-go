@@ -213,9 +213,7 @@ func (hs *harmonyServer) vagrantArtifactUploadHandler(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `
 	{
-		"version": {
-			"upload_path": "%s"
-		}
+		"upload_path": "%s"
 	}
 	`, uploadPath)
 }

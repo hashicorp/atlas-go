@@ -12,17 +12,17 @@ type Artifact struct {
 	// User and name are self-explanatory. Tag is the combination
 	// of both into "username/name"
 	User string `json:"username"`
-	Name string
+	Name string `json:"name"`
 	Tag  string `json:",omitempty"`
 }
 
 // ArtifactVersion represents a single version of an artifact.
 type ArtifactVersion struct {
-	Type     string `json:"artifact_type"`
-	ID       string `json:"external_id"`
-	Version  int
-	Metadata map[string]string
-	File     bool
+	Type     string            `json:"artifact_type"`
+	ID       string            `json:"external_id"`
+	Version  int               `json:"version"`
+	Metadata map[string]string `json:"metadata"`
+	File     bool              `json:"file"`
 
 	UploadPath  string `json:"upload_path"`
 	UploadToken string `json:"upload_token"`
@@ -51,7 +51,7 @@ type UploadArtifactOpts struct {
 
 func (o *UploadArtifactOpts) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"version": map[string]interface{}{
+		"artifact_version": map[string]interface{}{
 			"id":       o.ID,
 			"file":     o.File != nil,
 			"metadata": o.Metadata,
@@ -136,6 +136,9 @@ func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
 	endpoint := "/api/v1/artifacts"
 	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewReader(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -165,6 +168,9 @@ func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, err
 
 	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewReader(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -175,22 +181,22 @@ func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, err
 		return nil, err
 	}
 
-	var aw artifactVersionWrapper
-	if err := decodeJSON(response, &aw); err != nil {
+	var av ArtifactVersion
+	if err := decodeJSON(response, &av); err != nil {
 		return nil, err
 	}
 
 	if opts.File != nil {
-		if err := c.putFile(aw.Version.UploadPath, opts.File); err != nil {
+		if err := c.putFile(av.UploadPath, opts.File); err != nil {
 			return nil, err
 		}
 	}
 
-	return aw.Version, nil
+	return &av, nil
 }
 
 type artifactWrapper struct {
-	Artifact *Artifact
+	Artifact *Artifact `json:"artifact"`
 }
 
 type artifactSearchWrapper struct {
