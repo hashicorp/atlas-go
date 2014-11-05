@@ -46,6 +46,7 @@ type UploadArtifactOpts struct {
 	ID       string
 	File     io.Reader
 	Metadata map[string]string
+	BuildId  int
 }
 
 func (o *UploadArtifactOpts) MarshalJSON() ([]byte, error) {
@@ -54,6 +55,7 @@ func (o *UploadArtifactOpts) MarshalJSON() ([]byte, error) {
 			"id":       o.ID,
 			"file":     o.File != nil,
 			"metadata": o.Metadata,
+			"build_id": o.BuildId,
 		},
 	})
 }
