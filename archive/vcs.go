@@ -32,6 +32,11 @@ var VCSList = []*VCS{
 		Files:  vcsFilesCmd("git", "ls-files"),
 	},
 	&VCS{
+		Name:   "hg",
+		Detect: []string{".hg/"},
+		Files:  vcsFilesCmd("hg", "locate --include ."),
+	},
+	&VCS{
 		Name:   "svn",
 		Detect: []string{".svn/"},
 		Files:  vcsFilesCmd("svn", "ls"),
