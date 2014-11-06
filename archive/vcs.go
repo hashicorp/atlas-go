@@ -21,7 +21,7 @@ type VCS struct {
 
 	// Files returns the files that are under version control for the
 	// given path.
-	Files func(path string) ([]string, error)
+	Files VCSFilesFunc
 }
 
 // VCSList is the list of VCS we recognize.
@@ -34,7 +34,7 @@ var VCSList = []*VCS{
 	&VCS{
 		Name:   "hg",
 		Detect: []string{".hg/"},
-		Files:  vcsFilesCmd("hg", "locate --include ."),
+		Files:  vcsTrimCmd(vcsFilesCmd("hg", "locate", "-f", "--include", ".")),
 	},
 	&VCS{
 		Name:   "svn",
@@ -42,6 +42,11 @@ var VCSList = []*VCS{
 		Files:  vcsFilesCmd("svn", "ls"),
 	},
 }
+
+// VCSFilesFunc is the callback called to return the files in the VCS.
+//
+// The return value should be paths relative to the given path.
+type VCSFilesFunc func(string) ([]string, error)
 
 // vcsDetect detects the VCS that is used for path.
 func vcsDetect(path string) (*VCS, error) {
@@ -82,7 +87,7 @@ func vcsFiles(path string) ([]string, error) {
 // vcsFilesCmd creates a Files-compatible function that reads the files
 // by executing the command in the repository path and returning each
 // line in stdout.
-func vcsFilesCmd(args ...string) func(string) ([]string, error) {
+func vcsFilesCmd(args ...string) VCSFilesFunc {
 	return func(path string) ([]string, error) {
 		var stderr, stdout bytes.Buffer
 
@@ -102,6 +107,43 @@ func vcsFilesCmd(args ...string) func(string) ([]string, error) {
 		scanner := bufio.NewScanner(&stdout)
 		for scanner.Scan() {
 			result = append(result, scanner.Text())
+		}
+
+		return result, nil
+	}
+}
+
+// vcsTrimCmd trims the prefix from the paths returned by another VCSFilesFunc.
+// This should be used to wrap another function if the return value is known
+// to have full paths rather than relative paths
+func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
+	return func(path string) ([]string, error) {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Error expanding VCS path: %s", err)
+		}
+
+		// Now that we have the root path, get the inner files
+		fs, err := f(path)
+		if err != nil {
+			return nil, err
+		}
+
+		// Trim the root path from the files
+		result := make([]string, 0, len(fs))
+		for _, f := range fs {
+			if !strings.HasPrefix(f, absPath) {
+				continue
+			}
+
+			f, err = filepath.Rel(absPath, f)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"Error determining path: %s", err)
+			}
+
+			result = append(result, f)
 		}
 
 		return result, nil

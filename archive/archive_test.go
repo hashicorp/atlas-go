@@ -17,10 +17,15 @@ import (
 const fixturesDir = "./test-fixtures"
 
 var testHasGit bool
+var testHasHg bool
 
 func init() {
 	if _, err := exec.LookPath("git"); err == nil {
 		testHasGit = true
+	}
+
+	if _, err := exec.LookPath("hg"); err == nil {
+		testHasHg = true
 	}
 }
 
@@ -256,6 +261,55 @@ func TestArchive_git(t *testing.T) {
 		"foo.txt",
 		"subdir/",
 		"subdir/hello.txt",
+	}
+
+	entries := testArchive(t, r, errCh)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
+func TestArchive_hg(t *testing.T) {
+	if !testHasHg {
+		t.Log("hg not found, skipping")
+		t.Skip()
+	}
+
+	// testDir with VCS set to true
+	testDir := testFixture("archive-hg")
+	r, errCh, err := Archive(testDir, &ArchiveOpts{VCS: true})
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"bar.txt",
+		"foo.txt",
+		"subdir/",
+		"subdir/hello.txt",
+	}
+
+	entries := testArchive(t, r, errCh)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
+func TestArchive_hgSubdir(t *testing.T) {
+	if !testHasHg {
+		t.Log("hg not found, skipping")
+		t.Skip()
+	}
+
+	// testDir with VCS set to true
+	testDir := filepath.Join(testFixture("archive-hg"), "subdir")
+	r, errCh, err := Archive(testDir, &ArchiveOpts{VCS: true})
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"hello.txt",
 	}
 
 	entries := testArchive(t, r, errCh)
