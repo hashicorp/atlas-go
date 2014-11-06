@@ -36,15 +36,29 @@ var VCSList = []*VCS{
 		Detect: []string{".hg/"},
 		Files:  vcsFilesCmd("hg", "locate --include ."),
 	},
+	&VCS{
+		Name:   "svn",
+		Detect: []string{".svn/"},
+		Files:  vcsFilesCmd("svn", "ls"),
+	},
 }
 
 // vcsDetect detects the VCS that is used for path.
 func vcsDetect(path string) (*VCS, error) {
 	for _, v := range VCSList {
-		for _, f := range v.Detect {
-			check := filepath.Join(path, f)
-			if _, err := os.Stat(check); err == nil {
-				return v, nil
+		dir := path
+		for {
+			for _, f := range v.Detect {
+				check := filepath.Join(dir, f)
+				if _, err := os.Stat(check); err == nil {
+					return v, nil
+				}
+			}
+
+			lastDir := dir
+			dir = filepath.Dir(dir)
+			if dir == lastDir {
+				break
 			}
 		}
 	}

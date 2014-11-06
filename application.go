@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 )
 
 // AppWraper
@@ -17,7 +16,7 @@ type appWrapper struct {
 type App struct {
 	// User is the namespace (username or organization) under which the
 	// Harmony application resides
-	User string `json:"user"`
+	User string `json:"username"`
 
 	// Name is the name of the application
 	Name string `json:"name"`
@@ -42,12 +41,12 @@ func (c *Client) App(user, name string) (*App, error) {
 		return nil, err
 	}
 
-	var aw appWrapper
-	if err := decodeJSON(response, &aw); err != nil {
+	var app App
+	if err := decodeJSON(response, &app); err != nil {
 		return nil, err
 	}
 
-	return aw.Application, nil
+	return &app, nil
 }
 
 // CreateApp creates a new App under the given user with the given name. If the
@@ -65,6 +64,9 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 	endpoint := "/api/v1/vagrant/applications"
 	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewReader(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -75,20 +77,20 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 		return nil, err
 	}
 
-	var aw appWrapper
-	if err := decodeJSON(response, &aw); err != nil {
+	var app App
+	if err := decodeJSON(response, &app); err != nil {
 		return nil, err
 	}
 
-	return aw.Application, nil
+	return &app, nil
 }
 
 // appVersion represents a specific version of an App in Harmony. It is actually
 // an upload container/wrapper.
 type appVersion struct {
-	UploadPath *url.URL `json:"upload_path"`
-	Token      string   `json:"token"`
-	Version    uint64   `json:"version"`
+	UploadPath string `json:"upload_path"`
+	Token      string `json:"token"`
+	Version    uint64 `json:"version"`
 }
 
 // UploadApp creates and uploads a new version for the App. If the server is
@@ -98,7 +100,7 @@ type appVersion struct {
 // It is the responsibility of the caller to create a properly-formed data
 // object; this method blindly passes along the contents of the io.Reader.
 func (c *Client) UploadApp(app *App, data io.Reader) error {
-	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/version",
+	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/versions",
 		app.User, app.Name)
 
 	request, err := c.Request("POST", endpoint, nil)
@@ -116,17 +118,7 @@ func (c *Client) UploadApp(app *App, data io.Reader) error {
 		return err
 	}
 
-	// Use the private rawRequest function here to avoid appending the
-	// access_token and being restricted to the Harmony namespace, since binstore
-	// lives under a different root URL.
-	request, err = c.rawRequest("PUT", av.UploadPath, &RequestOptions{
-		Body: data,
-	})
-	if err != nil {
-		return err
-	}
-
-	if _, err := checkResp(c.HTTPClient.Do(request)); err != nil {
+	if err := c.putFile(av.UploadPath, data); err != nil {
 		return err
 	}
 

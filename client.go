@@ -1,10 +1,12 @@
 package harmony
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +15,9 @@ import (
 )
 
 const harmonyURL = "https://harmony.hashicorp.com"
+
+// If this is set to true, verbose debug data will be output
+var Debug = false
 
 // ErrNotFound is the error returned if a 404 is returned by an API request.
 var ErrNotFound = errors.New("resource not found")
@@ -163,10 +168,32 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 
 	// Add the token and other params
 	if c.Token != "" {
+		if ro.Params == nil {
+			ro.Params = make(map[string]string)
+		}
+
 		ro.Params["access_token"] = c.Token
 	}
 
 	return c.rawRequest(verb, &u, ro)
+}
+
+func (c *Client) putFile(rawUrl string, r io.Reader) error {
+	url, err := url.Parse(rawUrl)
+	if err != nil {
+		return err
+	}
+
+	request, err := c.rawRequest("PUT", url, &RequestOptions{Body: r})
+	if err != nil {
+		return err
+	}
+
+	if _, err := checkResp(c.HTTPClient.Do(request)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // rawRequest accepts a verb, URL, and RequestOptions struct and returns the
@@ -224,8 +251,6 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 		return resp, nil
 	case 204:
 		return resp, nil
-	case 422:
-		return nil, parseErr(resp)
 	case 400:
 		return nil, parseErr(resp)
 	case 401:
@@ -252,6 +277,16 @@ func parseErr(resp *http.Response) error {
 // decodeJSON is used to JSON decode a body into an interface.
 func decodeJSON(resp *http.Response, out interface{}) error {
 	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
+
+	var r io.Reader = resp.Body
+	if Debug {
+		var buf bytes.Buffer
+		r = io.TeeReader(resp.Body, &buf)
+		defer func() {
+			log.Printf("[DEBUG] client: decoding: %s", buf.String())
+		}()
+	}
+
+	dec := json.NewDecoder(r)
 	return dec.Decode(out)
 }
