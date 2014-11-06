@@ -14,7 +14,7 @@ type BuildConfig struct {
 
 	// Name is the actual name of the build config, unique in the scope
 	// of the username.
-	Name string
+	Name string `json:"name"`
 }
 
 // BuildConfigVersion represents a single uploaded (or uploadable) version
@@ -23,7 +23,7 @@ type BuildConfigVersion struct {
 	// The fields below are the username/name combo to uniquely identify
 	// a build config.
 	User string `json:"username"`
-	Name string
+	Name string `json:"name"`
 
 	// Builds is the list of builds that this version supports.
 	Builds []BuildConfigBuild
@@ -33,11 +33,11 @@ type BuildConfigVersion struct {
 // build configuration.
 type BuildConfigBuild struct {
 	// Name is a unique name for this build
-	Name string
+	Name string `json:"name"`
 
 	// Type is the type of builder that this build needs to run on,
 	// such as "amazon-ebs" or "qemu".
-	Type string
+	Type string `json:"type"`
 }
 
 // BuildConfig gets a single build configuration by user and name.
@@ -53,12 +53,12 @@ func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
 		return nil, err
 	}
 
-	var w bcWrapper
-	if err := decodeJSON(response, &w); err != nil {
+	var bc BuildConfig
+	if err := decodeJSON(response, &bc); err != nil {
 		return nil, err
 	}
 
-	return w.BuildConfig, nil
+	return &bc, nil
 }
 
 // CreateBuildConfig creates a new build configuration.
@@ -77,6 +77,9 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 
 	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewReader(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	})
 	if err != nil {
 		return err
@@ -91,7 +94,7 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 //
 // Actual API: "Create Build Config Version"
 func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) error {
-	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/version",
+	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/versions",
 		v.User, v.Name)
 
 	var bodyData bcCreateWrapper
@@ -103,6 +106,9 @@ func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) 
 
 	request, err := c.Request("POST", endpoint, &RequestOptions{
 		Body: bytes.NewReader(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	})
 	if err != nil {
 		return err
@@ -138,6 +144,6 @@ type bcCreate struct {
 // bcCreateWrapper is the wrapper for creating a build config.
 type bcCreateWrapper struct {
 	Version struct {
-		Builds []BuildConfigBuild
-	}
+		Builds []BuildConfigBuild `json:"builds"`
+	} `json:"version"`
 }

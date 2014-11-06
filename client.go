@@ -251,8 +251,6 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 		return resp, nil
 	case 204:
 		return resp, nil
-	case 422:
-		return nil, parseErr(resp)
 	case 400:
 		return nil, parseErr(resp)
 	case 401:
