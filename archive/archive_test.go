@@ -269,6 +269,39 @@ func TestArchive_git(t *testing.T) {
 	}
 }
 
+func TestArchive_gitSubdir(t *testing.T) {
+	if !testHasGit {
+		t.Log("git not found, skipping")
+		t.Skip()
+	}
+
+	// Git doesn't allow nested ".git" directories so we do some hackiness
+	// here to get around that...
+	testDir := testFixture("archive-git")
+	oldName := filepath.Join(testDir, "DOTgit")
+	newName := filepath.Join(testDir, ".git")
+	if err := os.Rename(oldName, newName); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	defer os.Rename(newName, oldName)
+
+	// testDir with VCS set to true
+	r, errCh, err := Archive(
+		filepath.Join(testDir, "subdir"), &ArchiveOpts{VCS: true})
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"hello.txt",
+	}
+
+	entries := testArchive(t, r, errCh)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_hg(t *testing.T) {
 	if !testHasHg {
 		t.Log("hg not found, skipping")
