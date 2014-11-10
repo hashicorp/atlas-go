@@ -9,7 +9,7 @@ deps:
 
 build:
 	@mkdir -p bin/
-	go build -o bin/harmony-go
+	go build -o bin/atlas-go
 
 test: deps
 	go list ./... | xargs -n1 go test -timeout=3s
@@ -18,7 +18,7 @@ xcompile: deps test
 	@rm -rf build/
 	@mkdir -p build
 	gox \
-		-output="build/{{.Dir}}_$(VERSION)_{{.OS}}_{{.Arch}}/harmony-go"
+		-output="build/{{.Dir}}_$(VERSION)_{{.OS}}_{{.Arch}}/atlas-go"
 
 package: xcompile
 	$(eval FILES := $(shell ls build))

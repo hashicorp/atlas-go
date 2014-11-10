@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-type harmonyServer struct {
+type atlasServer struct {
 	URL *url.URL
 
 	t      *testing.T
@@ -22,8 +22,8 @@ type harmonyServer struct {
 	server http.Server
 }
 
-func newTestHarmonyServer(t *testing.T) *harmonyServer {
-	hs := &harmonyServer{t: t}
+func newTestAtlasServer(t *testing.T) *atlasServer {
+	hs := &atlasServer{t: t}
 
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -47,11 +47,11 @@ func newTestHarmonyServer(t *testing.T) *harmonyServer {
 	return hs
 }
 
-func (hs *harmonyServer) Stop() {
+func (hs *atlasServer) Stop() {
 	hs.ln.Close()
 }
 
-func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
+func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
 
@@ -81,7 +81,7 @@ func (hs *harmonyServer) setupRoutes(mux *http.ServeMux) {
 		hs.vagrantBCCreateVersionHandler)
 }
 
-func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) statusHandler(w http.ResponseWriter, r *http.Request) {
 	slice := strings.Split(r.URL.Path, "/")
 	codeStr := slice[len(slice)-1]
 
@@ -93,12 +93,12 @@ func (hs *harmonyServer) statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(int(code))
 }
 
-func (hs *harmonyServer) jsonHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) jsonHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"ok": true}`)
 }
 
-func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) authenticationHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		hs.t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func (hs *harmonyServer) authenticationHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (hs *harmonyServer) vagrantArtifactExistingHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantArtifactExistingHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -143,7 +143,7 @@ func (hs *harmonyServer) vagrantArtifactExistingHandler(w http.ResponseWriter, r
 	`)
 }
 
-func (hs *harmonyServer) vagrantArtifactSearchHandler1(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantArtifactSearchHandler1(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -160,7 +160,7 @@ func (hs *harmonyServer) vagrantArtifactSearchHandler1(w http.ResponseWriter, r 
 	`)
 }
 
-func (hs *harmonyServer) vagrantArtifactSearchHandler2(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantArtifactSearchHandler2(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -191,7 +191,7 @@ func (hs *harmonyServer) vagrantArtifactSearchHandler2(w http.ResponseWriter, r 
 	`)
 }
 
-func (hs *harmonyServer) vagrantArtifactUploadHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantArtifactUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -218,7 +218,7 @@ func (hs *harmonyServer) vagrantArtifactUploadHandler(w http.ResponseWriter, r *
 	`, uploadPath)
 }
 
-func (hs *harmonyServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -240,7 +240,7 @@ func (hs *harmonyServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.R
 	fmt.Fprintf(w, "ok")
 }
 
-func (hs *harmonyServer) vagrantBCCreateVersionHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantBCCreateVersionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -268,7 +268,7 @@ func (hs *harmonyServer) vagrantBCCreateVersionHandler(w http.ResponseWriter, r 
 	`, uploadPath)
 }
 
-func (hs *harmonyServer) vagrantBCExistingHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantBCExistingHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -284,7 +284,7 @@ func (hs *harmonyServer) vagrantBCExistingHandler(w http.ResponseWriter, r *http
 	`)
 }
 
-func (hs *harmonyServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -310,7 +310,7 @@ func (hs *harmonyServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.
 	}
 }
 
-func (hs *harmonyServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -336,7 +336,7 @@ func (hs *harmonyServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http
 	}
 }
 
-func (hs *harmonyServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Request) {
 	u := *hs.URL
 	u.Path = path.Join(u.Path, "_binstore/630e42d9-2364-2412-4121-18266770468e")
 
@@ -353,7 +353,7 @@ func (hs *harmonyServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.
 	fmt.Fprintf(w, string(body))
 }
 
-func (hs *harmonyServer) binstoreHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *atlasServer) binstoreHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "PUT" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return

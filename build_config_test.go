@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestBuildConfig_fetches(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -31,7 +31,7 @@ func TestBuildConfig_fetches(t *testing.T) {
 }
 
 func TestCreateBuildConfig(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -46,7 +46,7 @@ func TestCreateBuildConfig(t *testing.T) {
 }
 
 func TestUploadBuildConfigVersion(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())

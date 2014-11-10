@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const harmonyURL = "https://harmony.hashicorp.com"
+const atlasURL = "https://atlas.hashicorp.com"
 
 // If this is set to true, verbose debug data will be output
 var Debug = false
@@ -40,22 +40,22 @@ func (re *RailsError) Error() string {
 	return strings.Join(list, ", ")
 }
 
-// Client represents a single connection to a Harmony API endpoint.
+// Client represents a single connection to a Atlas API endpoint.
 type Client struct {
-	// URL is the full endpoint address to the Harmony server including the
+	// URL is the full endpoint address to the Atlas server including the
 	// protocol, port, and path.
 	URL *url.URL
 
-	// Token is the Harmony authentication token
+	// Token is the Atlas authentication token
 	Token string
 
 	// HTTPClient is the underlying http client with which to make requests.
 	HTTPClient *http.Client
 }
 
-// DefaultClient returns a client that connects to the Harmony API.
+// DefaultClient returns a client that connects to the Atlas API.
 func DefaultClient() *Client {
-	client, err := NewClient(harmonyURL)
+	client, err := NewClient(atlasURL)
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +63,7 @@ func DefaultClient() *Client {
 	return client
 }
 
-// NewClient creates a new Harmony Client from the given URL (as a string). If
+// NewClient creates a new Atlas Client from the given URL (as a string). If
 // the URL cannot be parsed, an error is returned. The HTTPClient is set to
 // http.DefaultClient, but this can be changed programatically by setting
 // client.HTTPClient. The user can also programtically set the URL as a
@@ -80,7 +80,7 @@ func NewClient(urlString string) (*Client, error) {
 
 	client := &Client{
 		URL:   parsedURL,
-		Token: os.Getenv("HARMONY_TOKEN"),
+		Token: os.Getenv("ATLAS_TOKEN"),
 	}
 
 	if err := client.init(); err != nil {
@@ -91,7 +91,7 @@ func NewClient(urlString string) (*Client, error) {
 }
 
 // Login accepts a username and password as string arguments. Both username and
-// password must be non-nil, non-empty values. Harmony does not permit
+// password must be non-nil, non-empty values. Atlas does not permit
 // passwordless authentication.
 //
 // If authentication is unsuccessful, an error is returned with the body of the
@@ -113,7 +113,7 @@ func (c *Client) Login(username, password string) (string, error) {
 		Body: strings.NewReader(url.Values{
 			"user[login]":       []string{username},
 			"user[password]":    []string{password},
-			"user[description]": []string{"Created by the Harmony Go Client"},
+			"user[description]": []string{"Created by the Atlas Go Client"},
 		}.Encode()),
 		Headers: map[string]string{
 			"Content-Type": "application/x-www-form-urlencoded",
