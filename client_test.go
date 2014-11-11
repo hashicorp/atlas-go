@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"net/http"
@@ -11,8 +11,8 @@ import (
 func TestDefaultClient_url(t *testing.T) {
 	client := DefaultClient()
 
-	if client.URL.String() != harmonyURL {
-		t.Fatal("expected %q to be %q", client.URL.String(), harmonyURL)
+	if client.URL.String() != atlasURL {
+		t.Fatal("expected %q to be %q", client.URL.String(), atlasURL)
 	}
 }
 
@@ -90,7 +90,7 @@ func TestLogin_missingPassword(t *testing.T) {
 }
 
 func TestLogin_serverErrorMessage(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -110,7 +110,7 @@ func TestLogin_serverErrorMessage(t *testing.T) {
 }
 
 func TestLogin_success(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -133,7 +133,7 @@ func TestLogin_success(t *testing.T) {
 }
 
 func TestRequest_getsData(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -152,7 +152,7 @@ func TestRequest_getsData(t *testing.T) {
 }
 
 func TestRequest_returnsError(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -176,7 +176,7 @@ func TestRequest_returnsError(t *testing.T) {
 }
 
 func TestRequestJSON_decodesData(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())

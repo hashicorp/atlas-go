@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"strings"

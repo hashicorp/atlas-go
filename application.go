@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"bytes"
@@ -12,10 +12,10 @@ type appWrapper struct {
 	Application *App `json:"application"`
 }
 
-// App represents a single instance of an application on the Harmony server.
+// App represents a single instance of an application on the Atlas server.
 type App struct {
 	// User is the namespace (username or organization) under which the
-	// Harmony application resides
+	// Atlas application resides
 	User string `json:"username"`
 
 	// Name is the name of the application
@@ -85,7 +85,7 @@ func (c *Client) CreateApp(user, name string) (*App, error) {
 	return &app, nil
 }
 
-// appVersion represents a specific version of an App in Harmony. It is actually
+// appVersion represents a specific version of an App in Atlas. It is actually
 // an upload container/wrapper.
 type appVersion struct {
 	UploadPath string `json:"upload_path"`

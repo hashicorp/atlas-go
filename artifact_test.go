@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestArtifact_fetchesArtifact(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -29,7 +29,7 @@ func TestArtifact_fetchesArtifact(t *testing.T) {
 }
 
 func TestArtifact_returnsErrorNoArtifact(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -44,7 +44,7 @@ func TestArtifact_returnsErrorNoArtifact(t *testing.T) {
 }
 
 func TestArtifactSearch_fetches(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -67,7 +67,7 @@ func TestArtifactSearch_fetches(t *testing.T) {
 }
 
 func TestArtifactSearch_metadata(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -94,7 +94,7 @@ func TestArtifactSearch_metadata(t *testing.T) {
 }
 
 func TestUploadArtifact(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())

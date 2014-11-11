@@ -1,4 +1,4 @@
-package harmony
+package atlas
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ func TestSlug_returnsSlug(t *testing.T) {
 }
 
 func TestApp_fetchesApp(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -41,7 +41,7 @@ func TestApp_fetchesApp(t *testing.T) {
 }
 
 func TestApp_returnsErrorNoApp(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -56,7 +56,7 @@ func TestApp_returnsErrorNoApp(t *testing.T) {
 }
 
 func TestCreateApp_createsAndReturnsApp(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -79,7 +79,7 @@ func TestCreateApp_createsAndReturnsApp(t *testing.T) {
 }
 
 func TestCreateApp_returnsErrorExistingApp(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())
@@ -94,7 +94,7 @@ func TestCreateApp_returnsErrorExistingApp(t *testing.T) {
 }
 
 func TestUploadApp_createsAndReturnsVersion(t *testing.T) {
-	server := newTestHarmonyServer(t)
+	server := newTestAtlasServer(t)
 	defer server.Stop()
 
 	client, err := NewClient(server.URL.String())

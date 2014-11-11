@@ -1,5 +1,5 @@
-Harmony Go
+Atlas Go
 ==========
-A Go client for HashiCorp's Harmony.
+A Go client for HashiCorp's Atlas.
 
 TBD
