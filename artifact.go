@@ -21,6 +21,7 @@ type Artifact struct {
 type ArtifactVersion struct {
 	User     string            `json:"username"`
 	Name     string            `json:"name"`
+	Tag      string            `json:",omitempty"`
 	Type     string            `json:"artifact_type"`
 	ID       string            `json:"external_id"`
 	Version  int               `json:"version"`
