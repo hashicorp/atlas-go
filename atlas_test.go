@@ -72,12 +72,12 @@ func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
-	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/version", hs.vagrantUploadAppHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/versions", hs.vagrantUploadAppHandler)
 
 	mux.HandleFunc("/api/v1/packer/build-configurations", hs.vagrantBCCreateHandler)
 	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing", hs.vagrantBCExistingHandler)
 	mux.HandleFunc(
-		"/api/v1/packer/build-configurations/hashicorp/existing/version",
+		"/api/v1/packer/build-configurations/hashicorp/existing/versions",
 		hs.vagrantBCCreateVersionHandler)
 }
 
@@ -276,10 +276,8 @@ func (hs *atlasServer) vagrantBCExistingHandler(w http.ResponseWriter, r *http.R
 
 	fmt.Fprintf(w, `
 	{
-		"build_configuration": {
-			"username": "hashicorp",
-			"name": "existing"
-		}
+		"username": "hashicorp",
+		"name": "existing"
 	}
 	`)
 }
@@ -300,7 +298,7 @@ func (hs *atlasServer) vagrantCreateAppHandler(w http.ResponseWriter, r *http.Re
 	if app.User == "hashicorp" && app.Name == "existing" {
 		w.WriteHeader(http.StatusConflict)
 	} else {
-		body, err := json.Marshal(&aw)
+		body, err := json.Marshal(app)
 		if err != nil {
 			hs.t.Fatal(err)
 		}
@@ -321,10 +319,10 @@ func (hs *atlasServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http.R
 	user, name := parts[0], parts[1]
 
 	if user == "hashicorp" && name == "existing" {
-		body, err := json.Marshal(&appWrapper{&App{
+		body, err := json.Marshal(&App{
 			User: "hashicorp",
 			Name: "existing",
-		}})
+		})
 		if err != nil {
 			hs.t.Fatal(err)
 		}
@@ -341,7 +339,7 @@ func (hs *atlasServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Re
 	u.Path = path.Join(u.Path, "_binstore/630e42d9-2364-2412-4121-18266770468e")
 
 	body, err := json.Marshal(&appVersion{
-		UploadPath: &u,
+		UploadPath: u.String(),
 		Token:      "630e42d9-2364-2412-4121-18266770468e",
 		Version:    125,
 	})
