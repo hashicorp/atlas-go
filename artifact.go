@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 )
 
 // Artifact represents a single instance of an artifact.
@@ -18,6 +19,8 @@ type Artifact struct {
 
 // ArtifactVersion represents a single version of an artifact.
 type ArtifactVersion struct {
+	User     string            `json:"username"`
+	Name     string            `json:"name"`
 	Type     string            `json:"artifact_type"`
 	ID       string            `json:"external_id"`
 	Version  int               `json:"version"`
@@ -155,6 +158,17 @@ func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
 	}
 
 	return aw.Artifact, nil
+}
+
+func (c *Client) ArtifactFileURL(av *ArtifactVersion) (*url.URL, error) {
+	if !av.File {
+		return nil, nil
+	}
+
+	u := *c.URL
+	u.Path = fmt.Sprintf("/api/v1/artifacts/%s/%s/%s/file",
+		av.User, av.Name, av.Type)
+	return &u, nil
 }
 
 func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, error) {

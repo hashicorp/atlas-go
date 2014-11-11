@@ -93,6 +93,58 @@ func TestArtifactSearch_metadata(t *testing.T) {
 	}
 }
 
+func TestArtifactFileURL(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v := &ArtifactVersion{
+		User: "foo",
+		Name: "bar",
+		Type: "vagrant-box",
+		File: true,
+	}
+
+	u, err := client.ArtifactFileURL(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := *server.URL
+	expected.Path = "/api/v1/artifacts/foo/bar/vagrant-box/file"
+	if u.String() != expected.String() {
+		t.Fatalf("unexpected: %s\n\nexpected: %s", u, expected.String())
+	}
+}
+
+func TestArtifactFileURL_nil(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v := &ArtifactVersion{
+		User: "foo",
+		Name: "bar",
+		Type: "vagrant-box",
+	}
+
+	u, err := client.ArtifactFileURL(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u != nil {
+		t.Fatal("should be nil")
+	}
+}
+
 func TestUploadArtifact(t *testing.T) {
 	server := newTestAtlasServer(t)
 	defer server.Stop()
