@@ -23,7 +23,7 @@ type ArtifactVersion struct {
 	Name     string            `json:"name"`
 	Tag      string            `json:",omitempty"`
 	Type     string            `json:"artifact_type"`
-	ID       string            `json:"external_id"`
+	ID       string            `json:"id"`
 	Version  int               `json:"version"`
 	Metadata map[string]string `json:"metadata"`
 	File     bool              `json:"file"`
