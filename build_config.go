@@ -93,7 +93,8 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 // and uploads the template associated with it.
 //
 // Actual API: "Create Build Config Version"
-func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) error {
+func (c *Client) UploadBuildConfigVersion(
+	v *BuildConfigVersion, tpl io.Reader, size int64) error {
 	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/versions",
 		v.User, v.Name)
 
@@ -124,7 +125,7 @@ func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, tpl io.Reader) 
 		return err
 	}
 
-	if err := c.putFile(data.UploadPath, tpl); err != nil {
+	if err := c.putFile(data.UploadPath, tpl, size); err != nil {
 		return err
 	}
 

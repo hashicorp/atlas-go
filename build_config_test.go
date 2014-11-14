@@ -61,7 +61,7 @@ func TestUploadBuildConfigVersion(t *testing.T) {
 		Builds: []BuildConfigBuild{
 			BuildConfigBuild{Name: "foo", Type: "ami"},
 		},
-	}, data)
+	}, data, int64(data.Len()))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -49,6 +49,7 @@ type UploadArtifactOpts struct {
 	Type     string
 	ID       string
 	File     io.Reader
+	FileSize int64
 	Metadata map[string]string
 	BuildId  int
 }
@@ -202,7 +203,7 @@ func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, err
 	}
 
 	if opts.File != nil {
-		if err := c.putFile(av.UploadPath, opts.File); err != nil {
+		if err := c.putFile(av.UploadPath, opts.File, opts.FileSize); err != nil {
 			return nil, err
 		}
 	}
