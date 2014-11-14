@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,26 +41,20 @@ func (o *ArchiveOpts) IsSet() bool {
 
 // Archive takes the given path and ArchiveOpts and archives it.
 //
-// The archive is done async and streamed via the io.ReadCloser returned.
-// The reader is blocking: data is only compressed and written as data is
-// being read from the reader. Because of this, any user doesn't have to
-// worry about quickly reading data to avoid memory bloat.
-//
-// The archive can be read with the io.ReadCloser that is returned. The error
-// returned is an error that happened before archiving started, so the
-// ReadCloser doesn't need to be closed (and should be nil). The error
-// channel are errors that can happen while archiving is happening. When
-// an error occurs on the channel, reading should stop and be closed.
+// The archive will be fully completed and put into a temporary file.
+// This must be done to retrieve the content length of the archive which
+// is need for almost all operations involving archives with Atlas. Because
+// of this, sufficient disk space will be required to buffer the archive.
 func Archive(
-	path string, opts *ArchiveOpts) (io.ReadCloser, <-chan error, error) {
+	path string, opts *ArchiveOpts) (io.ReadCloser, int64, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, 0, err
 	}
 
 	// Direct file paths cannot have archive options
 	if !fi.IsDir() && opts.IsSet() {
-		return nil, nil, fmt.Errorf(
+		return nil, 0, fmt.Errorf(
 			"Options such as exclude, include, and VCS can't be set when " +
 				"the path is a file.")
 	}
@@ -72,20 +67,28 @@ func Archive(
 }
 
 func archiveFile(
-	path string, opts *ArchiveOpts) (io.ReadCloser, <-chan error, error) {
+	path string, opts *ArchiveOpts) (io.ReadCloser, int64, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, 0, err
 	}
 
 	if _, err := gzip.NewReader(f); err == nil {
 		// Reset the read offset for future reading
 		if _, err := f.Seek(0, 0); err != nil {
-			return nil, nil, err
+			f.Close()
+			return nil, 0, err
+		}
+
+		// Get the file info for the size
+		fi, err := f.Stat()
+		if err != nil {
+			f.Close()
+			return nil, 0, err
 		}
 
 		// This is a gzip file, let it through.
-		return f, nil, nil
+		return f, fi.Size(), nil
 	}
 
 	// Close the file, no use for it anymore
@@ -94,7 +97,7 @@ func archiveFile(
 	// We have a single file that is not gzipped. Compress it.
 	path, err = filepath.Abs(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, 0, err
 	}
 
 	// Act like we're compressing a directory, but only include this one
@@ -105,23 +108,29 @@ func archiveFile(
 }
 
 func archiveDir(
-	root string, opts *ArchiveOpts) (io.ReadCloser, <-chan error, error) {
+	root string, opts *ArchiveOpts) (io.ReadCloser, int64, error) {
 	var vcsInclude []string
 	if opts.VCS {
 		var err error
 		vcsInclude, err = vcsFiles(root)
 		if err != nil {
-			return nil, nil, err
+			return nil, 0, err
 		}
 	}
 
-	// We're going to write to an io.Pipe so that we can ensure the other
-	// side is reading as we're writing.
-	pr, pw := io.Pipe()
+	// Create the temporary file that we'll send the archive data to.
+	archiveF, err := ioutil.TempFile("", "atlas-archive")
+	if err != nil {
+		return nil, 0, err
+	}
 
-	// Buffer the writer so that we can keep some data moving in memory
-	// while we're compressing. 4M should be good.
-	bufW := bufio.NewWriterSize(pw, 4096*1024)
+	// Create the wrapper for the result which will automatically
+	// remove the temporary file on close.
+	archiveWrapper := &readCloseRemover{F: archiveF}
+
+	// Buffer the writer so that we can push as much data to disk at
+	// a time as possible. 4M should be good.
+	bufW := bufio.NewWriterSize(archiveF, 4096*1024)
 
 	// Gzip compress all the output data
 	gzipW := gzip.NewWriter(bufW)
@@ -243,51 +252,53 @@ func archiveDir(
 		return nil
 	}
 
-	// Create all our channels so we can send data through some tubes
-	// to other goroutines.
-	errCh := make(chan error, 1)
-	go func() {
-		// First, walk the path and do the normal files
-		werr := filepath.Walk(root, walkFn)
-		if werr != nil {
-			goto CLEANUP
-		}
-
+	// First, walk the path and do the normal files
+	werr := filepath.Walk(root, walkFn)
+	if werr == nil {
 		// If that succeeded, handle the extra files
 		werr = copyExtras(tarW, opts.Extra)
+	}
 
-	CLEANUP:
-		// Attempt to close all the things. If we get an error on the way
-		// and we haven't had an error yet, then record that as the critical
-		// error. But we still try to close everything.
+	// Attempt to close all the things. If we get an error on the way
+	// and we haven't had an error yet, then record that as the critical
+	// error. But we still try to close everything.
 
-		// Close the tar writer
-		if err := tarW.Close(); err != nil && werr == nil {
-			werr = err
-		}
+	// Close the tar writer
+	if err := tarW.Close(); err != nil && werr == nil {
+		werr = err
+	}
 
-		// Close the gzip writer
-		if err := gzipW.Close(); err != nil && werr == nil {
-			werr = err
-		}
+	// Close the gzip writer
+	if err := gzipW.Close(); err != nil && werr == nil {
+		werr = err
+	}
 
-		// Flush the buffer
-		if err := bufW.Flush(); err != nil && werr == nil {
-			werr = err
-		}
+	// Flush the buffer
+	if err := bufW.Flush(); err != nil && werr == nil {
+		werr = err
+	}
 
-		// Close the pipe
-		if err := pw.Close(); err != nil && werr == nil {
-			werr = err
-		}
+	// If we had an error, then close the file (removing it) and
+	// return the error.
+	if werr != nil {
+		archiveWrapper.Close()
+		return nil, 0, werr
+	}
 
-		// Send any error we might have down the pipe if we have one
-		if werr != nil {
-			errCh <- werr
-		}
-	}()
+	// Seek to the beginning
+	if _, err := archiveWrapper.F.Seek(0, 0); err != nil {
+		archiveWrapper.Close()
+		return nil, 0, err
+	}
 
-	return pr, errCh, nil
+	// Get the file information so we can get the size
+	fi, err := archiveWrapper.F.Stat()
+	if err != nil {
+		archiveWrapper.Close()
+		return nil, 0, err
+	}
+
+	return archiveWrapper, fi.Size(), nil
 }
 
 func copyExtras(w *tar.Writer, extra map[string]string) error {
@@ -338,4 +349,26 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 	}
 
 	return nil
+}
+
+// readCloseRemover is an io.ReadCloser implementation that will remove
+// the file on Close(). We use this to clean up our temporary file for
+// the archive.
+type readCloseRemover struct {
+	F *os.File
+}
+
+func (r *readCloseRemover) Read(p []byte) (int, error) {
+	return r.F.Read(p)
+}
+
+func (r *readCloseRemover) Close() error {
+	// First close the file
+	err := r.F.Close()
+
+	// Next make sure to remove it, or at least try, regardless of error
+	// above.
+	os.Remove(r.F.Name())
+
+	return err
 }
