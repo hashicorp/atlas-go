@@ -99,7 +99,7 @@ type appVersion struct {
 //
 // It is the responsibility of the caller to create a properly-formed data
 // object; this method blindly passes along the contents of the io.Reader.
-func (c *Client) UploadApp(app *App, data io.Reader) error {
+func (c *Client) UploadApp(app *App, data io.Reader, size int64) error {
 	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/versions",
 		app.User, app.Name)
 
@@ -118,7 +118,7 @@ func (c *Client) UploadApp(app *App, data io.Reader) error {
 		return err
 	}
 
-	if err := c.putFile(av.UploadPath, data); err != nil {
+	if err := c.putFile(av.UploadPath, data, size); err != nil {
 		return err
 	}
 

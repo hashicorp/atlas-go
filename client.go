@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -150,9 +151,10 @@ func (c *Client) init() error {
 
 //
 type RequestOptions struct {
-	Params  map[string]string
-	Headers map[string]string
-	Body    io.Reader
+	Params     map[string]string
+	Headers    map[string]string
+	Body       io.Reader
+	BodyLength int64
 }
 
 // Request creates a new HTTP request using the given verb and sub path.
@@ -178,13 +180,16 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 	return c.rawRequest(verb, &u, ro)
 }
 
-func (c *Client) putFile(rawUrl string, r io.Reader) error {
+func (c *Client) putFile(rawUrl string, r io.Reader, size int64) error {
 	url, err := url.Parse(rawUrl)
 	if err != nil {
 		return err
 	}
 
-	request, err := c.rawRequest("PUT", url, &RequestOptions{Body: r})
+	request, err := c.rawRequest("PUT", url, &RequestOptions{
+		Body:       r,
+		BodyLength: size,
+	})
 	if err != nil {
 		return err
 	}
@@ -227,6 +232,12 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 	// Add any headers
 	for k, v := range ro.Headers {
 		request.Header.Add(k, v)
+	}
+
+	// Add content-length if we have it
+	if ro.BodyLength > 0 {
+		request.Header.Add(
+			"Content-Length", strconv.FormatInt(ro.BodyLength, 10))
 	}
 
 	return request, nil

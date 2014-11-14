@@ -107,7 +107,7 @@ func TestUploadApp_createsAndReturnsVersion(t *testing.T) {
 		Name: "existing",
 	}
 	data := new(bytes.Buffer)
-	err = client.UploadApp(app, data)
+	err = client.UploadApp(app, data, int64(data.Len()))
 	if err != nil {
 		t.Fatal(err)
 	}
