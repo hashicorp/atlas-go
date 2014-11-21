@@ -22,6 +22,10 @@ type VCS struct {
 	// Files returns the files that are under version control for the
 	// given path.
 	Files VCSFilesFunc
+
+	// Metadata returns arbitrary metadata about the underlying VCS for the
+	// given path.
+	Metadata VCSMetadataFunc
 }
 
 // VCSList is the list of VCS we recognize.
@@ -43,10 +47,16 @@ var VCSList = []*VCS{
 	},
 }
 
-// VCSFilesFunc is the callback called to return the files in the VCS.
+// VCSFilesFunc is the callback invoked to return the files in the VCS.
 //
 // The return value should be paths relative to the given path.
 type VCSFilesFunc func(string) ([]string, error)
+
+// VCSMetadataFunc is the callback invoked to get arbitrary information about
+// the current VCS.
+//
+// The return value should be a map of key-value pairs.
+type VCSMetadataFunc func(string) (map[string]string, error)
 
 // vcsDetect detects the VCS that is used for path.
 func vcsDetect(path string) (*VCS, error) {
