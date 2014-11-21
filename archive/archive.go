@@ -37,7 +37,7 @@ type ArchiveOpts struct {
 	// files will override any other files in the archive.
 	Extra map[string]string
 
-	// VCS, if true, will detect and use a VCS system to determien what
+	// VCS, if true, will detect and use a VCS system to determine what
 	// files to include the archive.
 	VCS bool
 }
