@@ -91,7 +91,7 @@ func vcsFiles(path string) ([]string, error) {
 		return nil, fmt.Errorf("No VCS found for path: %s", path)
 	}
 
-	if vcs.Files {
+	if vcs.Files != nil {
 		return vcs.Files(path)
 	}
 
@@ -174,7 +174,7 @@ func vcsMetadata(path string) (map[string]string, error) {
 		return nil, fmt.Errorf("No VCS found for path: %s", path)
 	}
 
-	if vcs.Metadata {
+	if vcs.Metadata != nil {
 		return vcs.Metadata(path)
 	}
 
