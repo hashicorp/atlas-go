@@ -31,19 +31,22 @@ type VCS struct {
 // VCSList is the list of VCS we recognize.
 var VCSList = []*VCS{
 	&VCS{
-		Name:   "git",
-		Detect: []string{".git/"},
-		Files:  vcsFilesCmd("git", "ls-files"),
+		Name:     "git",
+		Detect:   []string{".git/"},
+		Files:    vcsFilesCmd("git", "ls-files"),
+		Metadata: func(string) (map[string]string, error) { return nil, nil },
 	},
 	&VCS{
-		Name:   "hg",
-		Detect: []string{".hg/"},
-		Files:  vcsTrimCmd(vcsFilesCmd("hg", "locate", "-f", "--include", ".")),
+		Name:     "hg",
+		Detect:   []string{".hg/"},
+		Files:    vcsTrimCmd(vcsFilesCmd("hg", "locate", "-f", "--include", ".")),
+		Metadata: func(string) (map[string]string, error) { return nil, nil },
 	},
 	&VCS{
-		Name:   "svn",
-		Detect: []string{".svn/"},
-		Files:  vcsFilesCmd("svn", "ls"),
+		Name:     "svn",
+		Detect:   []string{".svn/"},
+		Files:    vcsFilesCmd("svn", "ls"),
+		Metadata: func(string) (map[string]string, error) { return nil, nil },
 	},
 }
 
@@ -158,4 +161,17 @@ func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
 
 		return result, nil
 	}
+}
+
+// vcsMetadata returns the files for the VCS directory path.
+func vcsMetadata(path string) (map[string]string, error) {
+	vcs, err := vcsDetect(path)
+	if err != nil {
+		return nil, fmt.Errorf("Error detecting VCS: %s", err)
+	}
+	if vcs == nil {
+		return nil, fmt.Errorf("No VCS found for path: %s", path)
+	}
+
+	return vcs.Metadata(path)
 }

@@ -117,9 +117,15 @@ func archiveFile(path string, opts *ArchiveOpts) (*Archive, error) {
 
 func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 	var vcsInclude []string
+	var metadata map[string]string
 	if opts.VCS {
 		var err error
 		vcsInclude, err = vcsFiles(root)
+		if err != nil {
+			return nil, err
+		}
+
+		metadata, err = vcsMetadata(root)
 		if err != nil {
 			return nil, err
 		}
@@ -308,6 +314,7 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 	return &Archive{
 		ReadCloser: archiveWrapper,
 		Size:       fi.Size(),
+		Metadata:   metadata,
 	}, nil
 }
 
