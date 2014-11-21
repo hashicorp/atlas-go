@@ -69,7 +69,7 @@ func TestArchiveOptsIsSet(t *testing.T) {
 
 func TestArchive_file(t *testing.T) {
 	path := filepath.Join(testFixture("archive-file"), "foo.txt")
-	r, size, err := Archive(path, new(ArchiveOpts))
+	r, err := CreateArchive(path, new(ArchiveOpts))
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -78,7 +78,7 @@ func TestArchive_file(t *testing.T) {
 		"foo.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -86,7 +86,7 @@ func TestArchive_file(t *testing.T) {
 
 func TestArchive_fileCompressed(t *testing.T) {
 	path := filepath.Join(testFixture("archive-file-compressed"), "file.tar.gz")
-	r, size, err := Archive(path, new(ArchiveOpts))
+	r, err := CreateArchive(path, new(ArchiveOpts))
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -95,7 +95,7 @@ func TestArchive_fileCompressed(t *testing.T) {
 		"./foo.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -107,28 +107,22 @@ func TestArchive_fileNoExist(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
-	r, size, err := Archive(tf, nil)
+	r, err := CreateArchive(tf, nil)
 	if err == nil {
 		t.Fatal("err should not be nil")
 	}
 	if r != nil {
 		t.Fatal("should be nil")
-	}
-	if size != 0 {
-		t.Fatal("should be zero")
 	}
 }
 
 func TestArchive_fileWithOpts(t *testing.T) {
-	r, size, err := Archive(tempFile(t), &ArchiveOpts{VCS: true})
+	r, err := CreateArchive(tempFile(t), &ArchiveOpts{VCS: true})
 	if err == nil {
 		t.Fatal("err should not be nil")
 	}
 	if r != nil {
 		t.Fatal("should be nil")
-	}
-	if size != 0 {
-		t.Fatal("should be zero")
 	}
 }
 
@@ -140,7 +134,7 @@ func TestArchive_dirExtra(t *testing.T) {
 		},
 	}
 
-	r, size, err := Archive(testFixture("archive-flat"), opts)
+	r, err := CreateArchive(testFixture("archive-flat"), opts)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -151,14 +145,14 @@ func TestArchive_dirExtra(t *testing.T) {
 		"hello.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
 }
 
 func TestArchive_dirNoVCS(t *testing.T) {
-	r, size, err := Archive(testFixture("archive-flat"), new(ArchiveOpts))
+	r, err := CreateArchive(testFixture("archive-flat"), new(ArchiveOpts))
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -168,14 +162,14 @@ func TestArchive_dirNoVCS(t *testing.T) {
 		"foo.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
 }
 
 func TestArchive_dirSubdirsNoVCS(t *testing.T) {
-	r, size, err := Archive(testFixture("archive-subdir"), new(ArchiveOpts))
+	r, err := CreateArchive(testFixture("archive-subdir"), new(ArchiveOpts))
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -187,7 +181,7 @@ func TestArchive_dirSubdirsNoVCS(t *testing.T) {
 		"subdir/hello.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -198,7 +192,7 @@ func TestArchive_dirExclude(t *testing.T) {
 		Exclude: []string{"subdir", "subdir/*"},
 	}
 
-	r, size, err := Archive(testFixture("archive-subdir"), opts)
+	r, err := CreateArchive(testFixture("archive-subdir"), opts)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -208,7 +202,7 @@ func TestArchive_dirExclude(t *testing.T) {
 		"foo.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -219,7 +213,7 @@ func TestArchive_dirInclude(t *testing.T) {
 		Include: []string{"bar.txt"},
 	}
 
-	r, size, err := Archive(testFixture("archive-subdir"), opts)
+	r, err := CreateArchive(testFixture("archive-subdir"), opts)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -228,7 +222,7 @@ func TestArchive_dirInclude(t *testing.T) {
 		"bar.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -251,7 +245,7 @@ func TestArchive_git(t *testing.T) {
 	defer os.Rename(newName, oldName)
 
 	// testDir with VCS set to true
-	r, size, err := Archive(testDir, &ArchiveOpts{VCS: true})
+	r, err := CreateArchive(testDir, &ArchiveOpts{VCS: true})
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -263,7 +257,7 @@ func TestArchive_git(t *testing.T) {
 		"subdir/hello.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -286,8 +280,7 @@ func TestArchive_gitSubdir(t *testing.T) {
 	defer os.Rename(newName, oldName)
 
 	// testDir with VCS set to true
-	r, size, err := Archive(
-		filepath.Join(testDir, "subdir"), &ArchiveOpts{VCS: true})
+	r, err := CreateArchive(filepath.Join(testDir, "subdir"), &ArchiveOpts{VCS: true})
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -296,7 +289,7 @@ func TestArchive_gitSubdir(t *testing.T) {
 		"hello.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -310,7 +303,7 @@ func TestArchive_hg(t *testing.T) {
 
 	// testDir with VCS set to true
 	testDir := testFixture("archive-hg")
-	r, size, err := Archive(testDir, &ArchiveOpts{VCS: true})
+	r, err := CreateArchive(testDir, &ArchiveOpts{VCS: true})
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -322,7 +315,7 @@ func TestArchive_hg(t *testing.T) {
 		"subdir/hello.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -336,7 +329,7 @@ func TestArchive_hgSubdir(t *testing.T) {
 
 	// testDir with VCS set to true
 	testDir := filepath.Join(testFixture("archive-hg"), "subdir")
-	r, size, err := Archive(testDir, &ArchiveOpts{VCS: true})
+	r, err := CreateArchive(testDir, &ArchiveOpts{VCS: true})
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -345,7 +338,7 @@ func TestArchive_hgSubdir(t *testing.T) {
 		"hello.txt",
 	}
 
-	entries := testArchive(t, r, size)
+	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
@@ -367,15 +360,15 @@ func TestReadCloseRemover(t *testing.T) {
 	}
 }
 
-func testArchive(t *testing.T, r io.ReadCloser, size int64) []string {
+func testArchive(t *testing.T, r *Archive) []string {
 	// Finish the archiving process in-memory
 	var buf bytes.Buffer
 	n, err := io.Copy(&buf, r)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
-	if n != size {
-		t.Fatalf("bad size: %d (expected: %d)", n, size)
+	if n != r.Size {
+		t.Fatalf("bad size: %d (expected: %d)", n, r.Size)
 	}
 
 	gzipR, err := gzip.NewReader(&buf)

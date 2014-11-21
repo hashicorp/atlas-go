@@ -22,6 +22,10 @@ type VCS struct {
 	// Files returns the files that are under version control for the
 	// given path.
 	Files VCSFilesFunc
+
+	// Metadata returns arbitrary metadata about the underlying VCS for the
+	// given path.
+	Metadata VCSMetadataFunc
 }
 
 // VCSList is the list of VCS we recognize.
@@ -43,10 +47,16 @@ var VCSList = []*VCS{
 	},
 }
 
-// VCSFilesFunc is the callback called to return the files in the VCS.
+// VCSFilesFunc is the callback invoked to return the files in the VCS.
 //
 // The return value should be paths relative to the given path.
 type VCSFilesFunc func(string) ([]string, error)
+
+// VCSMetadataFunc is the callback invoked to get arbitrary information about
+// the current VCS.
+//
+// The return value should be a map of key-value pairs.
+type VCSMetadataFunc func(string) (map[string]string, error)
 
 // vcsDetect detects the VCS that is used for path.
 func vcsDetect(path string) (*VCS, error) {
@@ -81,7 +91,11 @@ func vcsFiles(path string) ([]string, error) {
 		return nil, fmt.Errorf("No VCS found for path: %s", path)
 	}
 
-	return vcs.Files(path)
+	if vcs.Files != nil {
+		return vcs.Files(path)
+	}
+
+	return nil, nil
 }
 
 // vcsFilesCmd creates a Files-compatible function that reads the files
@@ -148,4 +162,21 @@ func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
 
 		return result, nil
 	}
+}
+
+// vcsMetadata returns the metadata for the VCS directory path.
+func vcsMetadata(path string) (map[string]string, error) {
+	vcs, err := vcsDetect(path)
+	if err != nil {
+		return nil, fmt.Errorf("Error detecting VCS: %s", err)
+	}
+	if vcs == nil {
+		return nil, fmt.Errorf("No VCS found for path: %s", path)
+	}
+
+	if vcs.Metadata != nil {
+		return vcs.Metadata(path)
+	}
+
+	return nil, nil
 }
