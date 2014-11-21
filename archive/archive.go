@@ -305,7 +305,10 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 		return nil, err
 	}
 
-	return &Archive{ReadCloser: archiveWrapper, Size: fi.Size()}, nil
+	return &Archive{
+		ReadCloser: archiveWrapper,
+		Size:       fi.Size(),
+	}, nil
 }
 
 func copyExtras(w *tar.Writer, extra map[string]string) error {
