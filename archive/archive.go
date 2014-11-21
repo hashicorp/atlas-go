@@ -19,11 +19,8 @@ type Archive struct {
 	io.ReadCloser
 
 	Size     int64
-	Metadata ArchiveMetadata
+	Metadata map[string]string
 }
-
-// ArchiveMetadata is metadata returned during archiving.
-type ArchiveMetadata map[string]string
 
 // ArchiveOpts are the options for defining how the archive will be built.
 type ArchiveOpts struct {
