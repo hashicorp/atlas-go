@@ -14,6 +14,17 @@ import (
 	"strings"
 )
 
+//
+type Archive struct {
+	io.ReadCloser
+
+	Size     int64
+	Metadata ArchiveMetadata
+}
+
+// ArchiveMetadata is metadata returned during archiving.
+type ArchiveMetadata map[string]string
+
 // ArchiveOpts are the options for defining how the archive will be built.
 type ArchiveOpts struct {
 	// Exclude and Include are filters of files to include/exclude in
@@ -45,16 +56,17 @@ func (o *ArchiveOpts) IsSet() bool {
 // This must be done to retrieve the content length of the archive which
 // is need for almost all operations involving archives with Atlas. Because
 // of this, sufficient disk space will be required to buffer the archive.
-func Archive(
-	path string, opts *ArchiveOpts) (io.ReadCloser, int64, error) {
+func CreateArchive(path string, opts *ArchiveOpts) (*Archive, error) {
+	// io.ReadCloser, int64, error
+
 	fi, err := os.Stat(path)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// Direct file paths cannot have archive options
 	if !fi.IsDir() && opts.IsSet() {
-		return nil, 0, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Options such as exclude, include, and VCS can't be set when " +
 				"the path is a file.")
 	}
@@ -66,29 +78,28 @@ func Archive(
 	}
 }
 
-func archiveFile(
-	path string, opts *ArchiveOpts) (io.ReadCloser, int64, error) {
+func archiveFile(path string, opts *ArchiveOpts) (*Archive, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	if _, err := gzip.NewReader(f); err == nil {
 		// Reset the read offset for future reading
 		if _, err := f.Seek(0, 0); err != nil {
 			f.Close()
-			return nil, 0, err
+			return nil, err
 		}
 
 		// Get the file info for the size
 		fi, err := f.Stat()
 		if err != nil {
 			f.Close()
-			return nil, 0, err
+			return nil, err
 		}
 
 		// This is a gzip file, let it through.
-		return f, fi.Size(), nil
+		return &Archive{ReadCloser: f, Size: fi.Size()}, nil
 	}
 
 	// Close the file, no use for it anymore
@@ -97,7 +108,7 @@ func archiveFile(
 	// We have a single file that is not gzipped. Compress it.
 	path, err = filepath.Abs(path)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// Act like we're compressing a directory, but only include this one
@@ -107,21 +118,20 @@ func archiveFile(
 	})
 }
 
-func archiveDir(
-	root string, opts *ArchiveOpts) (io.ReadCloser, int64, error) {
+func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 	var vcsInclude []string
 	if opts.VCS {
 		var err error
 		vcsInclude, err = vcsFiles(root)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 
 	// Create the temporary file that we'll send the archive data to.
 	archiveF, err := ioutil.TempFile("", "atlas-archive")
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// Create the wrapper for the result which will automatically
@@ -282,23 +292,23 @@ func archiveDir(
 	// return the error.
 	if werr != nil {
 		archiveWrapper.Close()
-		return nil, 0, werr
+		return nil, werr
 	}
 
 	// Seek to the beginning
 	if _, err := archiveWrapper.F.Seek(0, 0); err != nil {
 		archiveWrapper.Close()
-		return nil, 0, err
+		return nil, err
 	}
 
 	// Get the file information so we can get the size
 	fi, err := archiveWrapper.F.Stat()
 	if err != nil {
 		archiveWrapper.Close()
-		return nil, 0, err
+		return nil, err
 	}
 
-	return archiveWrapper, fi.Size(), nil
+	return &Archive{ReadCloser: archiveWrapper, Size: fi.Size()}, nil
 }
 
 func copyExtras(w *tar.Writer, extra map[string]string) error {
