@@ -31,22 +31,19 @@ type VCS struct {
 // VCSList is the list of VCS we recognize.
 var VCSList = []*VCS{
 	&VCS{
-		Name:     "git",
-		Detect:   []string{".git/"},
-		Files:    vcsFilesCmd("git", "ls-files"),
-		Metadata: func(string) (map[string]string, error) { return nil, nil },
+		Name:   "git",
+		Detect: []string{".git/"},
+		Files:  vcsFilesCmd("git", "ls-files"),
 	},
 	&VCS{
-		Name:     "hg",
-		Detect:   []string{".hg/"},
-		Files:    vcsTrimCmd(vcsFilesCmd("hg", "locate", "-f", "--include", ".")),
-		Metadata: func(string) (map[string]string, error) { return nil, nil },
+		Name:   "hg",
+		Detect: []string{".hg/"},
+		Files:  vcsTrimCmd(vcsFilesCmd("hg", "locate", "-f", "--include", ".")),
 	},
 	&VCS{
-		Name:     "svn",
-		Detect:   []string{".svn/"},
-		Files:    vcsFilesCmd("svn", "ls"),
-		Metadata: func(string) (map[string]string, error) { return nil, nil },
+		Name:   "svn",
+		Detect: []string{".svn/"},
+		Files:  vcsFilesCmd("svn", "ls"),
 	},
 }
 
@@ -94,7 +91,11 @@ func vcsFiles(path string) ([]string, error) {
 		return nil, fmt.Errorf("No VCS found for path: %s", path)
 	}
 
-	return vcs.Files(path)
+	if vcs.Files {
+		return vcs.Files(path)
+	}
+
+	return nil, nil
 }
 
 // vcsFilesCmd creates a Files-compatible function that reads the files
@@ -163,7 +164,7 @@ func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
 	}
 }
 
-// vcsMetadata returns the files for the VCS directory path.
+// vcsMetadata returns the metadata for the VCS directory path.
 func vcsMetadata(path string) (map[string]string, error) {
 	vcs, err := vcsDetect(path)
 	if err != nil {
@@ -173,5 +174,9 @@ func vcsMetadata(path string) (map[string]string, error) {
 		return nil, fmt.Errorf("No VCS found for path: %s", path)
 	}
 
-	return vcs.Metadata(path)
+	if vcs.Metadata {
+		return vcs.Metadata(path)
+	}
+
+	return nil, nil
 }
