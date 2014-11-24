@@ -34,6 +34,37 @@ var VCSList = []*VCS{
 		Name:   "git",
 		Detect: []string{".git/"},
 		Files:  vcsFilesCmd("git", "ls-files"),
+		Metadata: func(path string) (map[string]string, error) {
+			// Future-self note: Git is NOT threadsafe, so we cannot run these
+			// operations in go routines or else you're going to have a really really
+			// bad day and Panda.State == "Sad" :(
+
+			branch, err := gitBranch(path)
+			if err != nil {
+				return nil, err
+			}
+
+			commit, err := gitCommit(path)
+			if err != nil {
+				return nil, err
+			}
+
+			remotes, err := gitRemotes(path)
+			if err != nil {
+				return nil, err
+			}
+
+			// Make the return result (we already know the size)
+			result := make(map[string]string, 2+len(remotes))
+
+			result["branch"] = branch
+			result["commit"] = commit
+			for remote, value := range remotes {
+				result[remote] = value
+			}
+
+			return result, nil
+		},
 	},
 	&VCS{
 		Name:   "hg",
@@ -179,4 +210,79 @@ func vcsMetadata(path string) (map[string]string, error) {
 	}
 
 	return nil, nil
+}
+
+// gitBranch gets and returns the current git branch for the Git repository
+// at the given path. It is assumed that the VCS is git.
+func gitBranch(path string) (string, error) {
+	var stderr, stdout bytes.Buffer
+
+	cmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
+	cmd.Dir = path
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("error getting git branch: %s\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
+	}
+
+	branch := strings.TrimSpace(stdout.String())
+
+	return branch, nil
+}
+
+// gitCommit gets the SHA of the latest commit for the Git repository at the
+// given path. It is assumed that the VCS is git.
+func gitCommit(path string) (string, error) {
+	var stderr, stdout bytes.Buffer
+
+	cmd := exec.Command("git", "log", "-n1", "--pretty=format:%H")
+	cmd.Dir = path
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("error getting git commit: %s\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
+	}
+
+	commit := strings.TrimSpace(stdout.String())
+
+	return commit, nil
+}
+
+// gitRemotes gets and returns a map of all remotes for the Git repository. The
+// map key is the name of the remote of the format "remote.NAME" and the value
+// is the endpoint for the remote. It is assumed that the VCS is git.
+func gitRemotes(path string) (map[string]string, error) {
+	var stderr, stdout bytes.Buffer
+
+	cmd := exec.Command("git", "remote", "-v")
+	cmd.Dir = path
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("error getting git remotes: %s\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
+	}
+
+	// Read each line of output as a remote
+	result := make(map[string]string)
+	scanner := bufio.NewScanner(&stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		split := strings.Split(line, "\t")
+
+		if len(split) < 2 {
+			return nil, fmt.Errorf("invalid response from git remote: %s", stdout.String())
+		}
+
+		remote := fmt.Sprintf("remote.%s", strings.TrimSpace(split[0]))
+		if _, ok := result[remote]; !ok {
+			// https://github.com/foo/bar.git (fetch) #=> https://github.com/foo/bar.git
+			urlSplit := strings.Split(split[1], " ")
+			result[remote] = strings.TrimSpace(urlSplit[0])
+		}
+	}
+
+	return result, nil
 }
