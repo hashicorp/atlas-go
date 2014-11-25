@@ -261,6 +261,22 @@ func TestArchive_git(t *testing.T) {
 	if !reflect.DeepEqual(entries, expected) {
 		t.Fatalf("bad: %#v", entries)
 	}
+
+	// Test that metadata was added
+	if r.Metadata == nil {
+		t.Fatal("expected archive metadata to be set")
+	}
+
+	expectedMetadata := map[string]string{
+		"branch":          "master",
+		"commit":          "7525d17cbbb56f3253a20903ffddc07c6c935c76",
+		"remote.origin":   "https://github.com/hashicorp/origin.git",
+		"remote.upstream": "https://github.com/hashicorp/upstream.git",
+	}
+
+	if !reflect.DeepEqual(r.Metadata, expectedMetadata) {
+		t.Fatalf("expected %+v to be %+v", r.Metadata, expectedMetadata)
+	}
 }
 
 func TestArchive_gitSubdir(t *testing.T) {
