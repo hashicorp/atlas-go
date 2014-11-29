@@ -114,15 +114,6 @@ func (hs *atlasServer) authenticationHandler(w http.ResponseWriter, r *http.Requ
     `)
 	} else {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, `
-      {
-        "errors": {
-          "error": [
-            "Bad login details"
-          ]
-        }
-      }
-    `)
 	}
 }
 

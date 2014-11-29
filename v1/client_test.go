@@ -103,9 +103,8 @@ func TestLogin_serverErrorMessage(t *testing.T) {
 		t.Fatal("expected error, but nothing was returned")
 	}
 
-	expected := "error: Bad login details"
-	if !strings.Contains(err.Error(), expected) {
-		t.Fatal("expected %q to contain %q", err.Error(), expected)
+	if err != ErrAuth {
+		t.Fatalf("bad: %s", err)
 	}
 }
 

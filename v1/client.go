@@ -20,6 +20,9 @@ const atlasURL = "https://atlas.hashicorp.com"
 // If this is set to true, verbose debug data will be output
 var Debug = false
 
+// ErrAuth is the error returned if a 401 is returned by an API request.
+var ErrAuth = errors.New("authentication failed")
+
 // ErrNotFound is the error returned if a 404 is returned by an API request.
 var ErrNotFound = errors.New("resource not found")
 
@@ -265,7 +268,7 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 	case 400:
 		return nil, parseErr(resp)
 	case 401:
-		return nil, parseErr(resp)
+		return nil, ErrAuth
 	case 404:
 		return nil, ErrNotFound
 	default:
