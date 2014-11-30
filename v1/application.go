@@ -99,28 +99,28 @@ type appVersion struct {
 //
 // It is the responsibility of the caller to create a properly-formed data
 // object; this method blindly passes along the contents of the io.Reader.
-func (c *Client) UploadApp(app *App, data io.Reader, size int64) error {
+func (c *Client) UploadApp(app *App, data io.Reader, size int64) (uint64, error) {
 	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/versions",
 		app.User, app.Name)
 
 	request, err := c.Request("POST", endpoint, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	response, err := checkResp(c.HTTPClient.Do(request))
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	var av appVersion
 	if err := decodeJSON(response, &av); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := c.putFile(av.UploadPath, data, size); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return av.Version, nil
 }
