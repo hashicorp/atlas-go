@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 )
 
@@ -239,8 +238,7 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 
 	// Add content-length if we have it
 	if ro.BodyLength > 0 {
-		request.Header.Add(
-			"Content-Length", strconv.FormatInt(ro.BodyLength, 10))
+		request.ContentLength = ro.BodyLength
 	}
 
 	return request, nil
