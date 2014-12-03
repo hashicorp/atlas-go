@@ -38,6 +38,10 @@ type BuildConfigBuild struct {
 	// Type is the type of builder that this build needs to run on,
 	// such as "amazon-ebs" or "qemu".
 	Type string `json:"type"`
+
+	// Artifact is true if this build results in one or more artifacts
+	// being sent to Atlas
+	Artifact bool `json:"artifact"`
 }
 
 // BuildConfig gets a single build configuration by user and name.
