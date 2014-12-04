@@ -15,6 +15,7 @@ import (
 )
 
 const atlasURL = "https://atlas.hashicorp.com"
+const userAgent = "HashiCorp Atlas Go Client v1"
 
 // If this is set to true, verbose debug data will be output
 var Debug = false
@@ -178,6 +179,9 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 	if err != nil {
 		return nil, err
 	}
+
+	// Set the User-Agent
+	request.Header.Set("User-Agent", userAgent)
 
 	// Add any headers
 	for k, v := range ro.Headers {
