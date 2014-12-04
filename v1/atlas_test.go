@@ -60,25 +60,18 @@ func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/authenticate", hs.authenticationHandler)
 
 	mux.HandleFunc("/api/v1/artifacts/hashicorp/existing", hs.vagrantArtifactExistingHandler)
-	mux.HandleFunc(
-		"/api/v1/artifacts/hashicorp/existing/amazon-ami",
-		hs.vagrantArtifactUploadHandler)
-	mux.HandleFunc(
-		"/api/v1/artifacts/hashicorp/existing1/amazon-ami/search",
-		hs.vagrantArtifactSearchHandler1)
-	mux.HandleFunc(
-		"/api/v1/artifacts/hashicorp/existing2/amazon-ami/search",
-		hs.vagrantArtifactSearchHandler2)
+	mux.HandleFunc("/api/v1/artifacts/hashicorp/existing/amazon-ami", hs.vagrantArtifactUploadHandler)
+	mux.HandleFunc("/api/v1/artifacts/hashicorp/existing1/amazon-ami/search", hs.vagrantArtifactSearchHandler1)
+	mux.HandleFunc("/api/v1/artifacts/hashicorp/existing2/amazon-ami/search", hs.vagrantArtifactSearchHandler2)
 
 	mux.HandleFunc("/api/v1/vagrant/applications", hs.vagrantCreateAppHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/", hs.vagrantCreateAppsHandler)
+	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing", hs.vagrantAppExistingHandler)
 	mux.HandleFunc("/api/v1/vagrant/applications/hashicorp/existing/versions", hs.vagrantUploadAppHandler)
 
 	mux.HandleFunc("/api/v1/packer/build-configurations", hs.vagrantBCCreateHandler)
 	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing", hs.vagrantBCExistingHandler)
-	mux.HandleFunc(
-		"/api/v1/packer/build-configurations/hashicorp/existing/versions",
-		hs.vagrantBCCreateVersionHandler)
+	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing/versions", hs.vagrantBCCreateVersionHandler)
 }
 
 func (hs *atlasServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -207,6 +200,22 @@ func (hs *atlasServer) vagrantArtifactUploadHandler(w http.ResponseWriter, r *ht
 		"upload_path": "%s"
 	}
 	`, uploadPath)
+}
+
+func (hs *atlasServer) vagrantAppExistingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+		{
+		  "username": "hashicorp",
+		  "name": "existing",
+		  "tag": "hashicorp/existing",
+		  "private": true
+		}
+	`)
 }
 
 func (hs *atlasServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Request) {
