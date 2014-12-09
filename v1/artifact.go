@@ -25,7 +25,6 @@ type ArtifactVersion struct {
 	Type     string            `json:"artifact_type"`
 	ID       string            `json:"id"`
 	Version  int               `json:"version"`
-	Build    int               `json:"build"`
 	Metadata map[string]string `json:"metadata"`
 	File     bool              `json:"file"`
 	Slug     string            `json:"slug"`
