@@ -9,16 +9,10 @@ deps:
 
 build:
 	@mkdir -p bin/
-	go build -o bin/atlas-go
+	go build -o bin/atlas-go ./v1
 
 test: deps
 	go list ./... | xargs -n1 go test -timeout=3s
-
-xcompile: deps test
-	@rm -rf build/
-	@mkdir -p build
-	gox \
-		-output="build/{{.Dir}}_$(VERSION)_{{.OS}}_{{.Arch}}/atlas-go"
 
 package: xcompile
 	$(eval FILES := $(shell ls build))
