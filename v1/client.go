@@ -221,6 +221,8 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 		return nil, ErrAuth
 	case 404:
 		return nil, ErrNotFound
+	case 422:
+		return nil, parseErr(resp)
 	default:
 		return nil, fmt.Errorf("client: %s", resp.Status)
 	}
