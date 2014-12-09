@@ -27,6 +27,7 @@ type ArtifactVersion struct {
 	Version  int               `json:"version"`
 	Metadata map[string]string `json:"metadata"`
 	File     bool              `json:"file"`
+	Slug     string            `json:"slug"`
 
 	UploadPath  string `json:"upload_path"`
 	UploadToken string `json:"upload_token"`
@@ -38,6 +39,7 @@ type ArtifactSearchOpts struct {
 	Name string
 	Type string
 
+	Build    string
 	Version  string
 	Metadata map[string]string
 }
@@ -93,6 +95,9 @@ func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, e
 	params := make(map[string]string)
 	if opts.Version != "" {
 		params["version"] = opts.Version
+	}
+	if opts.Build != "" {
+		params["build"] = opts.Build
 	}
 
 	i := 1
