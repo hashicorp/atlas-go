@@ -12,7 +12,7 @@ func TestDefaultClient_url(t *testing.T) {
 	client := DefaultClient()
 
 	if client.URL.String() != atlasURL {
-		t.Fatal("expected %q to be %q", client.URL.String(), atlasURL)
+		t.Fatalf("expected %q to be %q", client.URL.String(), atlasURL)
 	}
 }
 
@@ -51,7 +51,7 @@ func TestNewClient_setsDefaultHTTPClient(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(client.HTTPClient, http.DefaultClient) {
-		t.Fatalf("expected %q to equal %q", client.HTTPClient, http.DefaultClient)
+		t.Fatalf("expected %#v to equal %#v", client.HTTPClient, http.DefaultClient)
 	}
 }
 
