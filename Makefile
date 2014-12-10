@@ -14,12 +14,4 @@ build:
 test: deps
 	go list ./... | xargs -n1 go test -timeout=3s
 
-package: xcompile
-	$(eval FILES := $(shell ls build))
-	@mkdir -p build/tgz
-	for f in $(FILES); do \
-		(cd $(shell pwd) && tar -zcvf tgz/$$f.tar.gz $$f); \
-		echo $$f; \
-	done
-
-.PHONY: all deps build test xcompile package
+.PHONY: all deps build test
