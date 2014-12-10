@@ -47,15 +47,13 @@ func (o *ArchiveOpts) IsSet() bool {
 	return len(o.Exclude) > 0 || len(o.Include) > 0 || o.VCS
 }
 
-// Archive takes the given path and ArchiveOpts and archives it.
+// CreateArchive takes the given path and ArchiveOpts and archives it.
 //
 // The archive will be fully completed and put into a temporary file.
 // This must be done to retrieve the content length of the archive which
-// is need for almost all operations involving archives with Atlas. Because
+// is needed for almost all operations involving archives with Atlas. Because
 // of this, sufficient disk space will be required to buffer the archive.
 func CreateArchive(path string, opts *ArchiveOpts) (*Archive, error) {
-	// io.ReadCloser, int64, error
-
 	fi, err := os.Stat(path)
 	if err != nil {
 		return nil, err
