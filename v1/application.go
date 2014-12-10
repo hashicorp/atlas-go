@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-// AppWraper
+// appWrapper is the API wrapper since the server wraps the resulting object.
 type appWrapper struct {
 	Application *App `json:"application"`
 }
@@ -93,7 +93,7 @@ type appVersion struct {
 	Version    uint64 `json:"version"`
 }
 
-// UploadApp creates and uploads a new version for the App. If the server is
+// UploadApp creates and uploads a new version for the App. If the server does not
 // find the application, an error is returned. If the server does not accept the
 // data, an error is returned.
 //

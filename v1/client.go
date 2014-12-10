@@ -69,8 +69,8 @@ func DefaultClient() *Client {
 
 // NewClient creates a new Atlas Client from the given URL (as a string). If
 // the URL cannot be parsed, an error is returned. The HTTPClient is set to
-// http.DefaultClient, but this can be changed programatically by setting
-// client.HTTPClient. The user can also programtically set the URL as a
+// http.DefaultClient, but this can be changed programmatically by setting
+// client.HTTPClient. The user can also programmatically set the URL as a
 // *url.URL.
 func NewClient(urlString string) (*Client, error) {
 	if len(urlString) == 0 {
@@ -228,7 +228,7 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 	}
 }
 
-// parseErr is used to take an error json response and return a single string
+// parseErr is used to take an error JSON response and return a single string
 // for use in error messages.
 func parseErr(resp *http.Response) error {
 	railsError := &RailsError{}
