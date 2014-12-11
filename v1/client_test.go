@@ -150,7 +150,38 @@ func TestRequest_getsData(t *testing.T) {
 	}
 }
 
-func TestRequest_returnsError(t *testing.T) {
+func TestRequest_railsError(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request, err := client.Request("GET", "/_rails-error", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = checkResp(client.HTTPClient.Do(request))
+	if err == nil {
+		t.Fatal("expected error, but nothing was returned")
+	}
+
+	expected := &RailsError{
+		Errors: []string{
+			"this is an error",
+			"this is another error",
+		},
+	}
+
+	if !reflect.DeepEqual(err, expected) {
+		t.Fatalf("expected %+v to be %+v", err, expected)
+	}
+}
+
+func TestRequest_notFoundError(t *testing.T) {
 	server := newTestAtlasServer(t)
 	defer server.Stop()
 
