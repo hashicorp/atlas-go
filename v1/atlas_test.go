@@ -53,6 +53,7 @@ func (hs *atlasServer) Stop() {
 
 func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/_json", hs.jsonHandler)
+	mux.HandleFunc("/_rails-error", hs.railsHandler)
 	mux.HandleFunc("/_status/", hs.statusHandler)
 
 	mux.HandleFunc("/_binstore/", hs.binstoreHandler)
@@ -84,6 +85,12 @@ func (hs *atlasServer) statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(int(code))
+}
+
+func (hs *atlasServer) railsHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(422)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"errors": ["this is an error", "this is another error"]}`)
 }
 
 func (hs *atlasServer) jsonHandler(w http.ResponseWriter, r *http.Request) {

@@ -28,20 +28,13 @@ var ErrNotFound = errors.New("resource not found")
 
 // RailsError represents an error that was returned from the Rails server.
 type RailsError struct {
-	Errors map[string][]string `json:"errors"`
+	Errors []string `json:"errors"`
 }
 
 // Error collects all of the errors in the RailsError and returns a comma-
 // separated list of the errors that were returned from the server.
 func (re *RailsError) Error() string {
-	var list []string
-	for key, errors := range re.Errors {
-		for _, err := range errors {
-			list = append(list, fmt.Sprintf("%s: %s", key, err))
-		}
-	}
-
-	return strings.Join(list, ", ")
+	return strings.Join(re.Errors, ", ")
 }
 
 // Client represents a single connection to a Atlas API endpoint.
@@ -236,14 +229,14 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 
 // parseErr is used to take an error JSON response and return a single string
 // for use in error messages.
-func parseErr(resp *http.Response) error {
-	railsError := &RailsError{}
+func parseErr(r *http.Response) error {
+	re := &RailsError{}
 
-	if err := decodeJSON(resp, &railsError); err != nil {
-		return fmt.Errorf("Error parsing error body: %s", err)
+	if err := decodeJSON(r, &re); err != nil {
+		return fmt.Errorf("error decoding JSON body: %s", err)
 	}
 
-	return railsError
+	return re
 }
 
 // decodeJSON is used to JSON decode a body into an interface.
