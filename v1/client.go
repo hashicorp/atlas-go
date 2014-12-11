@@ -102,10 +102,10 @@ func (c *Client) init() error {
 
 // RequestOptions is the list of options to pass to the request.
 type RequestOptions struct {
-	// Params is a slice of key-value pairs that will be added to the Request.
+	// Params is a map of key-value pairs that will be added to the Request.
 	Params map[string]string
 
-	// Headers is a slice of key-value pairs that will be added to the Request.
+	// Headers is a map of key-value pairs that will be added to the Request.
 	Headers map[string]string
 
 	// Body is an io.Reader object that will be streamed or uploaded with the
