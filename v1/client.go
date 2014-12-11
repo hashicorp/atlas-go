@@ -105,7 +105,7 @@ type RequestOptions struct {
 	// Params is a slice of key-value pairs that will be added to the Request.
 	Params map[string]string
 
-	// Headers is slice of key-value pairs that will be added to the Request.
+	// Headers is a slice of key-value pairs that will be added to the Request.
 	Headers map[string]string
 
 	// Body is an io.Reader object that will be streamed or uploaded with the
