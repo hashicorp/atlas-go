@@ -34,7 +34,7 @@ type RailsError struct {
 // Error collects all of the errors in the RailsError and returns a comma-
 // separated list of the errors that were returned from the server.
 func (re *RailsError) Error() string {
-	list := make([]string, 0)
+	var list []string
 	for key, errors := range re.Errors {
 		for _, err := range errors {
 			list = append(list, fmt.Sprintf("%s: %s", key, err))
@@ -100,10 +100,16 @@ func (c *Client) init() error {
 	return nil
 }
 
-//
+// RequestOptions is the list of options to pass to the request.
 type RequestOptions struct {
-	Params     map[string]string
-	Headers    map[string]string
+	// Params is a slice of key-value pairs that will be added to the Request.
+	Params map[string]string
+
+	// Headers is slice of key-value pairs that will be added to the Request.
+	Headers map[string]string
+
+	// Body is an io.Reader object that will be streamed or uploaded with the
+	// Request. BodyLength is the final size of the Body.
 	Body       io.Reader
 	BodyLength int64
 }
@@ -131,8 +137,8 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 	return c.rawRequest(verb, &u, ro)
 }
 
-func (c *Client) putFile(rawUrl string, r io.Reader, size int64) error {
-	url, err := url.Parse(rawUrl)
+func (c *Client) putFile(rawURL string, r io.Reader, size int64) error {
+	url, err := url.Parse(rawURL)
 	if err != nil {
 		return err
 	}

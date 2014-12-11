@@ -53,16 +53,17 @@ type UploadArtifactOpts struct {
 	File     io.Reader
 	FileSize int64
 	Metadata map[string]string
-	BuildId  int
+	BuildID  int
 }
 
+// MarshalJSON converts the UploadArtifactOpts into a JSON struct.
 func (o *UploadArtifactOpts) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"artifact_version": map[string]interface{}{
 			"id":       o.ID,
 			"file":     o.File != nil,
 			"metadata": o.Metadata,
-			"build_id": o.BuildId,
+			"build_id": o.BuildID,
 		},
 	})
 }
@@ -71,6 +72,9 @@ func (o *UploadArtifactOpts) MarshalJSON() ([]byte, error) {
 // if you don't care what the value is.
 const MetadataAnyValue = "943febbf-589f-401b-8f25-58f6d8786848"
 
+// Artifact finds the Atlas artifact by the given name and returns it. Any
+// errors that occur are returned, including ErrAuth and ErrNotFound special
+// exceptions which the user may want to handle separately.
 func (c *Client) Artifact(user, name string) (*Artifact, error) {
 	endpoint := fmt.Sprintf("/api/v1/artifacts/%s/%s", user, name)
 	request, err := c.Request("GET", endpoint, nil)
@@ -91,6 +95,8 @@ func (c *Client) Artifact(user, name string) (*Artifact, error) {
 	return aw.Artifact, nil
 }
 
+// ArtifactSearch searches Atlas for the given ArtifactSearchOpts and returns
+// a slice of ArtifactVersions.
 func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, error) {
 	params := make(map[string]string)
 	if opts.Version != "" {
@@ -134,6 +140,8 @@ func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, e
 	return w.Versions, nil
 }
 
+// CreateArtifact creates and returns a new Artifact in Atlas. Any errors that
+// occurr are returned.
 func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
 	body, err := json.Marshal(&artifactWrapper{&Artifact{
 		User: user,
@@ -167,6 +175,8 @@ func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
 	return aw.Artifact, nil
 }
 
+// ArtifactFileURL is a helper method for getting the URL for an ArtifactVersion
+// from the Client.
 func (c *Client) ArtifactFileURL(av *ArtifactVersion) (*url.URL, error) {
 	if !av.File {
 		return nil, nil
@@ -178,6 +188,8 @@ func (c *Client) ArtifactFileURL(av *ArtifactVersion) (*url.URL, error) {
 	return &u, nil
 }
 
+// UploadArtifact streams the upload of a file on disk using the given
+// UploadArtifactOpts. Any errors that occur are returned.
 func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, error) {
 	endpoint := fmt.Sprintf("/api/v1/artifacts/%s/%s/%s",
 		opts.User, opts.Name, opts.Type)
