@@ -113,6 +113,8 @@ type RequestOptions struct {
 
 // Request creates a new HTTP request using the given verb and sub path.
 func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request, error) {
+	log.Printf("[INFO] request: %s %s", verb, spath)
+
 	// Ensure we have a RequestOptions struct (passing nil is an acceptable)
 	if ro == nil {
 		ro = new(RequestOptions)
@@ -124,6 +126,7 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 
 	// Add the token and other params
 	if c.Token != "" {
+		log.Printf("[DEBUG] request: appending token (%s)", maskString(c.Token))
 		if ro.Params == nil {
 			ro.Params = make(map[string]string)
 		}
@@ -135,6 +138,8 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 }
 
 func (c *Client) putFile(rawURL string, r io.Reader, size int64) error {
+	log.Printf("[INFO] putting file: %s", rawURL)
+
 	url, err := url.Parse(rawURL)
 	if err != nil {
 		return err
@@ -195,6 +200,8 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 	if ro.BodyLength > 0 {
 		request.ContentLength = ro.BodyLength
 	}
+
+	log.Printf("[DEBUG] raw request: %#v", request)
 
 	return request, nil
 }
