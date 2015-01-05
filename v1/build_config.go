@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 )
 
 // BuildConfig represents a Packer build configuration.
@@ -56,6 +57,8 @@ type BuildConfigBuild struct {
 
 // BuildConfig gets a single build configuration by user and name.
 func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
+	log.Printf("[INFO] getting build configuration %s/%s", user, name)
+
 	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s", user, name)
 	request, err := c.Request("GET", endpoint, nil)
 	if err != nil {
@@ -77,8 +80,9 @@ func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
 
 // CreateBuildConfig creates a new build configuration.
 func (c *Client) CreateBuildConfig(user, name string) error {
-	endpoint := "/api/v1/packer/build-configurations"
+	log.Printf("[INFO] creating build configuration %s/%s", user, name)
 
+	endpoint := "/api/v1/packer/build-configurations"
 	body, err := json.Marshal(&bcWrapper{
 		BuildConfig: &BuildConfig{
 			User: user,
@@ -109,6 +113,8 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 // Actual API: "Create Build Config Version"
 func (c *Client) UploadBuildConfigVersion(
 	v *BuildConfigVersion, tpl io.Reader, size int64) error {
+	log.Printf("[INFO] uploading build configuration version %s (%d bytes)", v.Slug(), size)
+
 	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/versions",
 		v.User, v.Name)
 
