@@ -74,9 +74,14 @@ func NewClient(urlString string) (*Client, error) {
 		return nil, err
 	}
 
+	token := os.Getenv("ATLAS_TOKEN")
+	if token != "" {
+		log.Printf("[DEBUG] using ATLAS_TOKEN (%s)", maskString(token))
+	}
+
 	client := &Client{
 		URL:   parsedURL,
-		Token: os.Getenv("ATLAS_TOKEN"),
+		Token: token,
 	}
 
 	if err := client.init(); err != nil {
