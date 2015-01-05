@@ -3,7 +3,6 @@ package atlas
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,10 +20,10 @@ const userAgent = "HashiCorp Atlas Go Client v1"
 var Debug = false
 
 // ErrAuth is the error returned if a 401 is returned by an API request.
-var ErrAuth = errors.New("authentication failed")
+var ErrAuth = fmt.Errorf("authentication failed")
 
 // ErrNotFound is the error returned if a 404 is returned by an API request.
-var ErrNotFound = errors.New("resource not found")
+var ErrNotFound = fmt.Errorf("resource not found")
 
 // RailsError represents an error that was returned from the Rails server.
 type RailsError struct {
