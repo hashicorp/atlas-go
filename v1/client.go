@@ -210,10 +210,25 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 // successful. A non-200 request returns an error formatted to included any
 // validation problems or otherwise.
 func checkResp(resp *http.Response, err error) (*http.Response, error) {
-	// If the err is already there, there was an error higher
-	// up the chain, so just return that
+	// If the err is already there, there was an error higher up the chain, so
+	// just return that
 	if err != nil {
 		return resp, err
+	}
+
+	log.Printf("[INFO] response: %d (%s)", resp.StatusCode, resp.Status)
+	if Debug {
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, resp.Body); err != nil {
+			log.Printf("[ERR] response: error copying response body")
+		} else {
+			log.Printf("[DEBUG] response: %s", buf.String())
+
+			// We are going to reset the response body, so we need to close the old
+			// one or else it will leak.
+			resp.Body.Close()
+			resp.Body = &bytesReadCloser{&buf}
+		}
 	}
 
 	switch resp.StatusCode {
@@ -253,16 +268,18 @@ func parseErr(r *http.Response) error {
 // decodeJSON is used to JSON decode a body into an interface.
 func decodeJSON(resp *http.Response, out interface{}) error {
 	defer resp.Body.Close()
-
-	var r io.Reader = resp.Body
-	if Debug {
-		var buf bytes.Buffer
-		r = io.TeeReader(resp.Body, &buf)
-		defer func() {
-			log.Printf("[DEBUG] client: decoding: %s", buf.String())
-		}()
-	}
-
-	dec := json.NewDecoder(r)
+	dec := json.NewDecoder(resp.Body)
 	return dec.Decode(out)
+}
+
+// bytesReadCloser is a simple wrapper around a bytes buffer that implements
+// Close as a noop.
+type bytesReadCloser struct {
+	*bytes.Buffer
+}
+
+func (nrc *bytesReadCloser) Close() error {
+	// we don't actually have to do anything here, since the buffer is just some
+	// data in memory  and the error is initialized to no-error
+	return nil
 }
