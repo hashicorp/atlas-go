@@ -16,9 +16,6 @@ import (
 const atlasURL = "https://atlas.hashicorp.com"
 const userAgent = "HashiCorp Atlas Go Client v1"
 
-// If this is set to true, verbose debug data will be output
-var Debug = false
-
 // ErrAuth is the error returned if a 401 is returned by an API request.
 var ErrAuth = fmt.Errorf("authentication failed")
 
@@ -217,18 +214,16 @@ func checkResp(resp *http.Response, err error) (*http.Response, error) {
 	}
 
 	log.Printf("[INFO] response: %d (%s)", resp.StatusCode, resp.Status)
-	if Debug {
-		var buf bytes.Buffer
-		if _, err := io.Copy(&buf, resp.Body); err != nil {
-			log.Printf("[ERR] response: error copying response body")
-		} else {
-			log.Printf("[DEBUG] response: %s", buf.String())
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, resp.Body); err != nil {
+		log.Printf("[ERR] response: error copying response body")
+	} else {
+		log.Printf("[DEBUG] response: %s", buf.String())
 
-			// We are going to reset the response body, so we need to close the old
-			// one or else it will leak.
-			resp.Body.Close()
-			resp.Body = &bytesReadCloser{&buf}
-		}
+		// We are going to reset the response body, so we need to close the old
+		// one or else it will leak.
+		resp.Body.Close()
+		resp.Body = &bytesReadCloser{&buf}
 	}
 
 	switch resp.StatusCode {
