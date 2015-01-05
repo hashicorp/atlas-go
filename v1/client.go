@@ -3,7 +3,6 @@ package atlas
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,10 +20,10 @@ const userAgent = "HashiCorp Atlas Go Client v1"
 var Debug = false
 
 // ErrAuth is the error returned if a 401 is returned by an API request.
-var ErrAuth = errors.New("authentication failed")
+var ErrAuth = fmt.Errorf("authentication failed")
 
 // ErrNotFound is the error returned if a 404 is returned by an API request.
-var ErrNotFound = errors.New("resource not found")
+var ErrNotFound = fmt.Errorf("resource not found")
 
 // RailsError represents an error that was returned from the Rails server.
 type RailsError struct {
@@ -75,9 +74,14 @@ func NewClient(urlString string) (*Client, error) {
 		return nil, err
 	}
 
+	token := os.Getenv("ATLAS_TOKEN")
+	if token != "" {
+		log.Printf("[DEBUG] using ATLAS_TOKEN (%s)", maskString(token))
+	}
+
 	client := &Client{
 		URL:   parsedURL,
-		Token: os.Getenv("ATLAS_TOKEN"),
+		Token: token,
 	}
 
 	if err := client.init(); err != nil {
@@ -109,6 +113,8 @@ type RequestOptions struct {
 
 // Request creates a new HTTP request using the given verb and sub path.
 func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request, error) {
+	log.Printf("[INFO] request: %s %s", verb, spath)
+
 	// Ensure we have a RequestOptions struct (passing nil is an acceptable)
 	if ro == nil {
 		ro = new(RequestOptions)
@@ -120,6 +126,7 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 
 	// Add the token and other params
 	if c.Token != "" {
+		log.Printf("[DEBUG] request: appending token (%s)", maskString(c.Token))
 		if ro.Params == nil {
 			ro.Params = make(map[string]string)
 		}
@@ -131,6 +138,8 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 }
 
 func (c *Client) putFile(rawURL string, r io.Reader, size int64) error {
+	log.Printf("[INFO] putting file: %s", rawURL)
+
 	url, err := url.Parse(rawURL)
 	if err != nil {
 		return err
@@ -192,6 +201,8 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 		request.ContentLength = ro.BodyLength
 	}
 
+	log.Printf("[DEBUG] raw request: %#v", request)
+
 	return request, nil
 }
 
@@ -199,10 +210,25 @@ func (c *Client) rawRequest(verb string, u *url.URL, ro *RequestOptions) (*http.
 // successful. A non-200 request returns an error formatted to included any
 // validation problems or otherwise.
 func checkResp(resp *http.Response, err error) (*http.Response, error) {
-	// If the err is already there, there was an error higher
-	// up the chain, so just return that
+	// If the err is already there, there was an error higher up the chain, so
+	// just return that
 	if err != nil {
 		return resp, err
+	}
+
+	log.Printf("[INFO] response: %d (%s)", resp.StatusCode, resp.Status)
+	if Debug {
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, resp.Body); err != nil {
+			log.Printf("[ERR] response: error copying response body")
+		} else {
+			log.Printf("[DEBUG] response: %s", buf.String())
+
+			// We are going to reset the response body, so we need to close the old
+			// one or else it will leak.
+			resp.Body.Close()
+			resp.Body = &bytesReadCloser{&buf}
+		}
 	}
 
 	switch resp.StatusCode {
@@ -242,16 +268,18 @@ func parseErr(r *http.Response) error {
 // decodeJSON is used to JSON decode a body into an interface.
 func decodeJSON(resp *http.Response, out interface{}) error {
 	defer resp.Body.Close()
-
-	var r io.Reader = resp.Body
-	if Debug {
-		var buf bytes.Buffer
-		r = io.TeeReader(resp.Body, &buf)
-		defer func() {
-			log.Printf("[DEBUG] client: decoding: %s", buf.String())
-		}()
-	}
-
-	dec := json.NewDecoder(r)
+	dec := json.NewDecoder(resp.Body)
 	return dec.Decode(out)
+}
+
+// bytesReadCloser is a simple wrapper around a bytes buffer that implements
+// Close as a noop.
+type bytesReadCloser struct {
+	*bytes.Buffer
+}
+
+func (nrc *bytesReadCloser) Close() error {
+	// we don't actually have to do anything here, since the buffer is just some
+	// data in memory  and the error is initialized to no-error
+	return nil
 }

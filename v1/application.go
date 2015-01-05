@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 )
 
 // appWrapper is the API wrapper since the server wraps the resulting object.
@@ -30,6 +31,8 @@ func (a *App) Slug() string {
 // App gets the App by the given user space and name. In the event the App is
 // not found (404), or for any other non-200 responses, an error is returned.
 func (c *Client) App(user, name string) (*App, error) {
+	log.Printf("[INFO] getting application %s/%s", user, name)
+
 	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s", user, name)
 	request, err := c.Request("GET", endpoint, nil)
 	if err != nil {
@@ -53,6 +56,8 @@ func (c *Client) App(user, name string) (*App, error) {
 // App is created successfully, it is returned. If the server returns any
 // errors, an error is returned.
 func (c *Client) CreateApp(user, name string) (*App, error) {
+	log.Printf("[INFO] creating application %s/%s", user, name)
+
 	body, err := json.Marshal(&appWrapper{&App{
 		User: user,
 		Name: name,
@@ -100,6 +105,8 @@ type appVersion struct {
 // It is the responsibility of the caller to create a properly-formed data
 // object; this method blindly passes along the contents of the io.Reader.
 func (c *Client) UploadApp(app *App, data io.Reader, size int64) (uint64, error) {
+	log.Printf("[INFO] uploading application %s (%d bytes)", app.Slug(), size)
+
 	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/versions",
 		app.User, app.Name)
 

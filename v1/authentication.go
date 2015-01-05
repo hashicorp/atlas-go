@@ -2,6 +2,7 @@ package atlas
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 )
@@ -16,6 +17,8 @@ import (
 // If authentication is successful, this method sets the Token value on the
 // Client and returns the Token as a string.
 func (c *Client) Login(username, password string) (string, error) {
+	log.Printf("[INFO] logging in user %s", username)
+
 	if len(username) == 0 {
 		return "", fmt.Errorf("client: missing username")
 	}
@@ -46,13 +49,14 @@ func (c *Client) Login(username, password string) (string, error) {
 	}
 
 	// Decode the body
-	var tokenResponse struct{ Token string }
-	if err := decodeJSON(response, &tokenResponse); err != nil {
+	var tResponse struct{ Token string }
+	if err := decodeJSON(response, &tResponse); err != nil {
 		return "", nil
 	}
 
 	// Set the token
-	c.Token = tokenResponse.Token
+	log.Printf("[DEBUG] setting atlas token (%s)", maskString(tResponse.Token))
+	c.Token = tResponse.Token
 
 	// Return the token
 	return c.Token, nil
@@ -61,6 +65,8 @@ func (c *Client) Login(username, password string) (string, error) {
 // Verify verifies that authentication and communication with Atlas
 // is properly functioning.
 func (c *Client) Verify() error {
+	log.Printf("[INFO] verifying authentication")
+
 	request, err := c.Request("GET", "/api/v1/authenticate", nil)
 	if err != nil {
 		return err
@@ -68,4 +74,15 @@ func (c *Client) Verify() error {
 
 	_, err = checkResp(c.HTTPClient.Do(request))
 	return err
+}
+
+// maskString masks all but the first few characters of a string for display
+// output. This is useful for tokens so we can display them to the user without
+// showing the full output.
+func maskString(s string) string {
+	if len(s) <= 3 {
+		return "*** (masked)"
+	}
+
+	return s[0:3] + "*** (masked)"
 }

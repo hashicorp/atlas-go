@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 )
 
@@ -98,6 +99,8 @@ func (c *Client) Artifact(user, name string) (*Artifact, error) {
 // ArtifactSearch searches Atlas for the given ArtifactSearchOpts and returns
 // a slice of ArtifactVersions.
 func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, error) {
+	log.Printf("[INFO] searching artifacts: %#v", opts)
+
 	params := make(map[string]string)
 	if opts.Version != "" {
 		params["version"] = opts.Version
@@ -117,8 +120,7 @@ func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, e
 		i++
 	}
 
-	endpoint := fmt.Sprintf(
-		"/api/v1/artifacts/%s/%s/%s/search",
+	endpoint := fmt.Sprintf("/api/v1/artifacts/%s/%s/%s/search",
 		opts.User, opts.Name, opts.Type)
 	request, err := c.Request("GET", endpoint, &RequestOptions{
 		Params: params,
@@ -143,6 +145,7 @@ func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, e
 // CreateArtifact creates and returns a new Artifact in Atlas. Any errors that
 // occurr are returned.
 func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
+	log.Printf("[INFO] creating artifact: %s/%s", user, name)
 	body, err := json.Marshal(&artifactWrapper{&Artifact{
 		User: user,
 		Name: name,
@@ -191,6 +194,8 @@ func (c *Client) ArtifactFileURL(av *ArtifactVersion) (*url.URL, error) {
 // UploadArtifact streams the upload of a file on disk using the given
 // UploadArtifactOpts. Any errors that occur are returned.
 func (c *Client) UploadArtifact(opts *UploadArtifactOpts) (*ArtifactVersion, error) {
+	log.Printf("[INFO] uploading artifact: %s/%s (%s)", opts.User, opts.Name, opts.Type)
+
 	endpoint := fmt.Sprintf("/api/v1/artifacts/%s/%s/%s",
 		opts.User, opts.Name, opts.Type)
 
