@@ -80,9 +80,9 @@ func (c *Client) Verify() error {
 // output. This is useful for tokens so we can display them to the user without
 // showing the full output.
 func maskString(s string) string {
-	if len(s) < 3 {
+	if len(s) <= 3 {
 		return "*** (masked)"
 	}
 
-	return s[0:2] + "*** (masked)"
+	return s[0:3] + "*** (masked)"
 }
