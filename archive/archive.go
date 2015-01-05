@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,6 +55,8 @@ func (o *ArchiveOpts) IsSet() bool {
 // is needed for almost all operations involving archives with Atlas. Because
 // of this, sufficient disk space will be required to buffer the archive.
 func CreateArchive(path string, opts *ArchiveOpts) (*Archive, error) {
+	log.Printf("[INFO] creating archive from %s", path)
+
 	fi, err := os.Stat(path)
 	if err != nil {
 		return nil, err
