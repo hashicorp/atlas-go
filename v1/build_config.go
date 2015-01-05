@@ -17,6 +17,11 @@ type BuildConfig struct {
 	Name string `json:"name"`
 }
 
+// Slug returns the slug format for this BuildConfig (User/Name)
+func (b *BuildConfig) Slug() string {
+	return fmt.Sprintf("%s/%s", b.User, b.Name)
+}
+
 // BuildConfigVersion represents a single uploaded (or uploadable) version
 // of a build configuration.
 type BuildConfigVersion struct {
@@ -27,6 +32,11 @@ type BuildConfigVersion struct {
 
 	// Builds is the list of builds that this version supports.
 	Builds []BuildConfigBuild
+}
+
+// Slug returns the slug format for this BuildConfigVersion (User/Name)
+func (bv *BuildConfigVersion) Slug() string {
+	return fmt.Sprintf("%s/%s", bv.User, bv.Name)
 }
 
 // BuildConfigBuild is a single build that is present in an uploaded

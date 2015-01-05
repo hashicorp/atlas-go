@@ -6,6 +6,22 @@ import (
 	"testing"
 )
 
+func TestBuildConfig_slug(t *testing.T) {
+	bc := &BuildConfig{User: "sethvargo", Name: "bacon"}
+	expected := "sethvargo/bacon"
+	if bc.Slug() != expected {
+		t.Errorf("expected %q to be %q", bc.Slug(), expected)
+	}
+}
+
+func TestBuildConfigVersion_slug(t *testing.T) {
+	bc := &BuildConfigVersion{User: "sethvargo", Name: "bacon"}
+	expected := "sethvargo/bacon"
+	if bc.Slug() != expected {
+		t.Errorf("expected %q to be %q", bc.Slug(), expected)
+	}
+}
+
 func TestBuildConfig_fetches(t *testing.T) {
 	server := newTestAtlasServer(t)
 	defer server.Stop()
