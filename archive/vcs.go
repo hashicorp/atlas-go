@@ -37,77 +37,11 @@ type VCS struct {
 // VCSList is the list of VCS we recognize.
 var VCSList = []*VCS{
 	&VCS{
-		Name:   "git",
-		Detect: []string{".git/"},
-		Preflight: func(path string) error {
-			var stderr, stdout bytes.Buffer
-
-			cmd := exec.Command("git", "--version")
-			cmd.Dir = path
-			cmd.Stdout = &stdout
-			cmd.Stderr = &stderr
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("error getting git version: %s\nstdout: %s\nstderr: %s",
-					err, stdout.String(), stderr.String())
-			}
-
-			// Check if the output is valid
-			output := strings.Split(strings.TrimSpace(stdout.String()), " ")
-			if len(output) < 1 {
-				log.Printf("[WARN] could not extract version output from Git")
-				return nil
-			}
-
-			// Parse the version
-			gitv, err := version.NewVersion(output[len(output)-1])
-			if err != nil {
-				log.Printf("[WARN] could not parse version output from Git")
-				return nil
-			}
-
-			constraint, err := version.NewConstraint("> 1.8")
-			if err != nil {
-				log.Printf("[WARN] could not create version constraint to check")
-				return nil
-			}
-			if !constraint.Check(gitv) {
-				return fmt.Errorf("git version (%s) is too old, please upgrade", gitv.String())
-			}
-
-			return nil
-		},
-		Files: vcsFilesCmd("git", "ls-files"),
-		Metadata: func(path string) (map[string]string, error) {
-			// Future-self note: Git is NOT threadsafe, so we cannot run these
-			// operations in go routines or else you're going to have a really really
-			// bad day and Panda.State == "Sad" :(
-
-			branch, err := gitBranch(path)
-			if err != nil {
-				return nil, err
-			}
-
-			commit, err := gitCommit(path)
-			if err != nil {
-				return nil, err
-			}
-
-			remotes, err := gitRemotes(path)
-			if err != nil {
-				return nil, err
-			}
-
-			// Make the return result (we already know the size)
-			result := make(map[string]string, 2+len(remotes))
-
-			result["branch"] = branch
-			result["commit"] = commit
-			for remote, value := range remotes {
-				result[remote] = value
-			}
-
-			return result, nil
-		},
+		Name:      "git",
+		Detect:    []string{".git/"},
+		Preflight: gitPreflight,
+		Files:     vcsFilesCmd("git", "ls-files"),
+		Metadata:  gitMetadata,
 	},
 	&VCS{
 		Name:   "hg",
@@ -351,6 +285,78 @@ func gitRemotes(path string) (map[string]string, error) {
 			urlSplit := strings.Split(split[1], " ")
 			result[remote] = strings.TrimSpace(urlSplit[0])
 		}
+	}
+
+	return result, nil
+}
+
+// gitPreflight is the pre-flight command that runs for Git-based VCSs
+func gitPreflight(path string) error {
+	var stderr, stdout bytes.Buffer
+
+	cmd := exec.Command("git", "--version")
+	cmd.Dir = path
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error getting git version: %s\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
+	}
+
+	// Check if the output is valid
+	output := strings.Split(strings.TrimSpace(stdout.String()), " ")
+	if len(output) < 1 {
+		log.Printf("[WARN] could not extract version output from Git")
+		return nil
+	}
+
+	// Parse the version
+	gitv, err := version.NewVersion(output[len(output)-1])
+	if err != nil {
+		log.Printf("[WARN] could not parse version output from Git")
+		return nil
+	}
+
+	constraint, err := version.NewConstraint("> 1.8")
+	if err != nil {
+		log.Printf("[WARN] could not create version constraint to check")
+		return nil
+	}
+	if !constraint.Check(gitv) {
+		return fmt.Errorf("git version (%s) is too old, please upgrade", gitv.String())
+	}
+
+	return nil
+}
+
+// gitMetadata is the function to parse and return Git metadata
+func gitMetadata(path string) (map[string]string, error) {
+	// Future-self note: Git is NOT threadsafe, so we cannot run these
+	// operations in go routines or else you're going to have a really really
+	// bad day and Panda.State == "Sad" :(
+
+	branch, err := gitBranch(path)
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := gitCommit(path)
+	if err != nil {
+		return nil, err
+	}
+
+	remotes, err := gitRemotes(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make the return result (we already know the size)
+	result := make(map[string]string, 2+len(remotes))
+
+	result["branch"] = branch
+	result["commit"] = commit
+	for remote, value := range remotes {
+		result[remote] = value
 	}
 
 	return result, nil
