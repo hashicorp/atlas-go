@@ -65,7 +65,7 @@ func CreateArchive(path string, opts *ArchiveOpts) (*Archive, error) {
 	// Direct file paths cannot have archive options
 	if !fi.IsDir() && opts.IsSet() {
 		return nil, fmt.Errorf(
-			"Options such as exclude, include, and VCS can't be set when " +
+			"options such as exclude, include, and VCS can't be set when " +
 				"the path is a file.")
 	}
 
@@ -121,6 +121,11 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 	var metadata map[string]string
 	if opts.VCS {
 		var err error
+
+		if err = vcsPreflight(root); err != nil {
+			return nil, err
+		}
+
 		vcsInclude, err = vcsFiles(root)
 		if err != nil {
 			return nil, err
@@ -230,7 +235,7 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 		header, err := tar.FileInfoHeader(info, target)
 		if err != nil {
 			return fmt.Errorf(
-				"Failed creating archive header: %s", path)
+				"failed creating archive header: %s", path)
 		}
 
 		// Modify the header to properly be the full subpath
@@ -242,7 +247,7 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 		// Write the header first to the archive.
 		if err := tarW.WriteHeader(header); err != nil {
 			return fmt.Errorf(
-				"Failed writing archive header: %s", path)
+				"failed writing archive header: %s", path)
 		}
 
 		// If it is a directory, then we're done (no body to write)
@@ -254,13 +259,13 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 		f, err := os.Open(path)
 		if err != nil {
 			return fmt.Errorf(
-				"Failed opening file '%s' to write compressed archive.", path)
+				"failed opening file '%s' to write compressed archive.", path)
 		}
 		defer f.Close()
 
 		if _, err = io.Copy(tarW, f); err != nil {
 			return fmt.Errorf(
-				"Failed copying file to archive: %s", path)
+				"failed copying file to archive: %s", path)
 		}
 
 		return nil
@@ -334,7 +339,7 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 		header, err := tar.FileInfoHeader(info, target)
 		if err != nil {
 			return fmt.Errorf(
-				"Failed creating archive header: %s", path)
+				"failed creating archive header: %s", path)
 		}
 
 		// Modify the header to properly be the full subpath
@@ -343,7 +348,7 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 		// Write the header first to the archive.
 		if err := w.WriteHeader(header); err != nil {
 			return fmt.Errorf(
-				"Failed writing archive header: %s", path)
+				"failed writing archive header: %s", path)
 		}
 
 		// If it is a directory, then we're done (no body to write)
@@ -355,14 +360,14 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 		f, err := os.Open(path)
 		if err != nil {
 			return fmt.Errorf(
-				"Failed opening file '%s' to write compressed archive.", path)
+				"failed opening file '%s' to write compressed archive.", path)
 		}
 
 		_, err = io.Copy(w, f)
 		f.Close()
 		if err != nil {
 			return fmt.Errorf(
-				"Failed copying file to archive: %s", path)
+				"failed copying file to archive: %s", path)
 		}
 	}
 

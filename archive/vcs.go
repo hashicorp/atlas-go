@@ -4,10 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	version "github.com/hashicorp/go-version"
 )
 
 // VCS is a struct that explains how to get the file list for a given
@@ -26,45 +29,19 @@ type VCS struct {
 	// Metadata returns arbitrary metadata about the underlying VCS for the
 	// given path.
 	Metadata VCSMetadataFunc
+
+	// Preflight is a function to run before looking for VCS files.
+	Preflight VCSPreflightFunc
 }
 
 // VCSList is the list of VCS we recognize.
 var VCSList = []*VCS{
 	&VCS{
-		Name:   "git",
-		Detect: []string{".git/"},
-		Files:  vcsFilesCmd("git", "ls-files"),
-		Metadata: func(path string) (map[string]string, error) {
-			// Future-self note: Git is NOT threadsafe, so we cannot run these
-			// operations in go routines or else you're going to have a really really
-			// bad day and Panda.State == "Sad" :(
-
-			branch, err := gitBranch(path)
-			if err != nil {
-				return nil, err
-			}
-
-			commit, err := gitCommit(path)
-			if err != nil {
-				return nil, err
-			}
-
-			remotes, err := gitRemotes(path)
-			if err != nil {
-				return nil, err
-			}
-
-			// Make the return result (we already know the size)
-			result := make(map[string]string, 2+len(remotes))
-
-			result["branch"] = branch
-			result["commit"] = commit
-			for remote, value := range remotes {
-				result[remote] = value
-			}
-
-			return result, nil
-		},
+		Name:      "git",
+		Detect:    []string{".git/"},
+		Preflight: gitPreflight,
+		Files:     vcsFilesCmd("git", "ls-files"),
+		Metadata:  gitMetadata,
 	},
 	&VCS{
 		Name:   "hg",
@@ -89,6 +66,15 @@ type VCSFilesFunc func(string) ([]string, error)
 // The return value should be a map of key-value pairs.
 type VCSMetadataFunc func(string) (map[string]string, error)
 
+// VCSPreflightFunc is a function that runs before VCS detection to be
+// configured by the user. It may be used to check if pre-requisites (like the
+// actual VCS) are installed or that a program is at the correct version. If an
+// error is returned, the VCS will not be processed and the error will be
+// returned up the stack.
+//
+// The given argument is the path where the VCS is running.
+type VCSPreflightFunc func(string) error
+
 // vcsDetect detects the VCS that is used for path.
 func vcsDetect(path string) (*VCS, error) {
 	for _, v := range VCSList {
@@ -112,14 +98,31 @@ func vcsDetect(path string) (*VCS, error) {
 	return nil, nil
 }
 
+// vcsPreflight returns the metadata for the VCS directory path.
+func vcsPreflight(path string) error {
+	vcs, err := vcsDetect(path)
+	if err != nil {
+		return fmt.Errorf("error detecting VCS: %s", err)
+	}
+	if vcs == nil {
+		return fmt.Errorf("no VCS found for path: %s", path)
+	}
+
+	if vcs.Preflight != nil {
+		return vcs.Preflight(path)
+	}
+
+	return nil
+}
+
 // vcsFiles returns the files for the VCS directory path.
 func vcsFiles(path string) ([]string, error) {
 	vcs, err := vcsDetect(path)
 	if err != nil {
-		return nil, fmt.Errorf("Error detecting VCS: %s", err)
+		return nil, fmt.Errorf("error detecting VCS: %s", err)
 	}
 	if vcs == nil {
-		return nil, fmt.Errorf("No VCS found for path: %s", path)
+		return nil, fmt.Errorf("no VCS found for path: %s", path)
 	}
 
 	if vcs.Files != nil {
@@ -142,7 +145,7 @@ func vcsFilesCmd(args ...string) VCSFilesFunc {
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
 			return nil, fmt.Errorf(
-				"Error executing %s: %s",
+				"error executing %s: %s",
 				strings.Join(args, " "),
 				err)
 		}
@@ -166,7 +169,7 @@ func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
 		absPath, err := filepath.Abs(path)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"Error expanding VCS path: %s", err)
+				"error expanding VCS path: %s", err)
 		}
 
 		// Now that we have the root path, get the inner files
@@ -185,7 +188,7 @@ func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
 			f, err = filepath.Rel(absPath, f)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"Error determining path: %s", err)
+					"error determining path: %s", err)
 			}
 
 			result = append(result, f)
@@ -199,10 +202,10 @@ func vcsTrimCmd(f VCSFilesFunc) VCSFilesFunc {
 func vcsMetadata(path string) (map[string]string, error) {
 	vcs, err := vcsDetect(path)
 	if err != nil {
-		return nil, fmt.Errorf("Error detecting VCS: %s", err)
+		return nil, fmt.Errorf("error detecting VCS: %s", err)
 	}
 	if vcs == nil {
-		return nil, fmt.Errorf("No VCS found for path: %s", path)
+		return nil, fmt.Errorf("no VCS found for path: %s", path)
 	}
 
 	if vcs.Metadata != nil {
@@ -282,6 +285,78 @@ func gitRemotes(path string) (map[string]string, error) {
 			urlSplit := strings.Split(split[1], " ")
 			result[remote] = strings.TrimSpace(urlSplit[0])
 		}
+	}
+
+	return result, nil
+}
+
+// gitPreflight is the pre-flight command that runs for Git-based VCSs
+func gitPreflight(path string) error {
+	var stderr, stdout bytes.Buffer
+
+	cmd := exec.Command("git", "--version")
+	cmd.Dir = path
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error getting git version: %s\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
+	}
+
+	// Check if the output is valid
+	output := strings.Split(strings.TrimSpace(stdout.String()), " ")
+	if len(output) < 1 {
+		log.Printf("[WARN] could not extract version output from Git")
+		return nil
+	}
+
+	// Parse the version
+	gitv, err := version.NewVersion(output[len(output)-1])
+	if err != nil {
+		log.Printf("[WARN] could not parse version output from Git")
+		return nil
+	}
+
+	constraint, err := version.NewConstraint("> 1.8")
+	if err != nil {
+		log.Printf("[WARN] could not create version constraint to check")
+		return nil
+	}
+	if !constraint.Check(gitv) {
+		return fmt.Errorf("git version (%s) is too old, please upgrade", gitv.String())
+	}
+
+	return nil
+}
+
+// gitMetadata is the function to parse and return Git metadata
+func gitMetadata(path string) (map[string]string, error) {
+	// Future-self note: Git is NOT threadsafe, so we cannot run these
+	// operations in go routines or else you're going to have a really really
+	// bad day and Panda.State == "Sad" :(
+
+	branch, err := gitBranch(path)
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := gitCommit(path)
+	if err != nil {
+		return nil, err
+	}
+
+	remotes, err := gitRemotes(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make the return result (we already know the size)
+	result := make(map[string]string, 2+len(remotes))
+
+	result["branch"] = branch
+	result["commit"] = commit
+	for remote, value := range remotes {
+		result[remote] = value
 	}
 
 	return result, nil

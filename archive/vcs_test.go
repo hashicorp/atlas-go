@@ -7,6 +7,24 @@ import (
 	"testing"
 )
 
+func TestVCSPreflight(t *testing.T) {
+	if !testHasGit {
+		t.Skip("git not found")
+	}
+
+	testDir := testFixture("archive-git")
+	oldName := filepath.Join(testDir, "DOTgit")
+	newName := filepath.Join(testDir, ".git")
+	if err := os.Rename(oldName, newName); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Rename(newName, oldName)
+
+	if err := vcsPreflight(testDir); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGitBranch(t *testing.T) {
 	if !testHasGit {
 		t.Skip("git not found")
