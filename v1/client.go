@@ -10,11 +10,15 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 )
 
 const atlasURL = "https://atlas.hashicorp.com"
-const userAgent = "HashiCorp Atlas Go Client v1"
+
+var projectURL = "https://github.com/hashicorp/atlas-go"
+var userAgent = fmt.Sprintf("AtlasGo/1.0 (+%s; %s)",
+	projectURL, runtime.Version())
 
 // ErrAuth is the error returned if a 401 is returned by an API request.
 var ErrAuth = fmt.Errorf("authentication failed")
