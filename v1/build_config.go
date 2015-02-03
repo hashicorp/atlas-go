@@ -79,7 +79,7 @@ func (c *Client) BuildConfig(user, name string) (*BuildConfig, error) {
 }
 
 // CreateBuildConfig creates a new build configuration.
-func (c *Client) CreateBuildConfig(user, name string) error {
+func (c *Client) CreateBuildConfig(user, name string) (*BuildConfig, error) {
 	log.Printf("[INFO] creating build configuration %s/%s", user, name)
 
 	endpoint := "/api/v1/packer/build-configurations"
@@ -90,7 +90,7 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 		},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	request, err := c.Request("POST", endpoint, &RequestOptions{
@@ -100,11 +100,20 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 		},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = checkResp(c.HTTPClient.Do(request))
-	return err
+	response, err := checkResp(c.HTTPClient.Do(request))
+	if err != nil {
+		return nil, err
+	}
+
+	var bc BuildConfig
+	if err := decodeJSON(response, &bc); err != nil {
+		return nil, err
+	}
+
+	return &bc, nil
 }
 
 // UploadBuildConfigVersion creates a single build configuration version
