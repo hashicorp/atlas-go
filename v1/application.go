@@ -98,19 +98,50 @@ type appVersion struct {
 	Version    uint64 `json:"version"`
 }
 
+// appMetadataWrapper is a wrapper around a map the prefixes the json key with
+// "metadata" when marshalled to format requests to the API properly.
+type appMetadataWrapper struct {
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
 // UploadApp creates and uploads a new version for the App. If the server does not
 // find the application, an error is returned. If the server does not accept the
 // data, an error is returned.
 //
 // It is the responsibility of the caller to create a properly-formed data
 // object; this method blindly passes along the contents of the io.Reader.
-func (c *Client) UploadApp(app *App, data io.Reader, size int64) (uint64, error) {
-	log.Printf("[INFO] uploading application %s (%d bytes)", app.Slug(), size)
+func (c *Client) UploadApp(app *App, metadata map[string]interface{},
+	data io.Reader, size int64) (uint64, error) {
+
+	log.Printf("[INFO] uploading application %s (%d bytes) with metadata %q",
+		app.Slug(), size, metadata)
 
 	endpoint := fmt.Sprintf("/api/v1/vagrant/applications/%s/%s/versions",
 		app.User, app.Name)
 
-	request, err := c.Request("POST", endpoint, nil)
+	// If metadata was given, setup the RequestOptions to pass in the metadata
+	// with the request.
+	var ro *RequestOptions
+	if metadata != nil {
+		// wrap the struct into the correct JSON format
+		wrapper := struct {
+			Application *appMetadataWrapper `json:"application"`
+		}{
+			&appMetadataWrapper{metadata},
+		}
+		m, err := json.Marshal(wrapper)
+		if err != nil {
+			return 0, err
+		}
+
+		// Create the request options.
+		ro = &RequestOptions{
+			Body:       bytes.NewReader(m),
+			BodyLength: int64(len(m)),
+		}
+	}
+
+	request, err := c.Request("POST", endpoint, ro)
 	if err != nil {
 		return 0, err
 	}

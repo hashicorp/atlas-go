@@ -345,6 +345,15 @@ func (hs *atlasServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Re
 	u := *hs.URL
 	u.Path = path.Join(u.Path, "_binstore/630e42d9-2364-2412-4121-18266770468e")
 
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r.Body); err != nil {
+		hs.t.Fatal(err)
+	}
+	expected := `{"application":{"metadata":{"testing":true}}}`
+	if buf.String() != expected {
+		hs.t.Fatalf("expected metadata to be %q, but was %q", expected, buf.String())
+	}
+
 	body, err := json.Marshal(&appVersion{
 		UploadPath: u.String(),
 		Token:      "630e42d9-2364-2412-4121-18266770468e",

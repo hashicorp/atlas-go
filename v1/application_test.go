@@ -106,8 +106,9 @@ func TestUploadApp_createsAndReturnsVersion(t *testing.T) {
 		User: "hashicorp",
 		Name: "existing",
 	}
+	metadata := map[string]interface{}{"testing": true}
 	data := new(bytes.Buffer)
-	version, err := client.UploadApp(app, data, int64(data.Len()))
+	version, err := client.UploadApp(app, metadata, data, int64(data.Len()))
 	if err != nil {
 		t.Fatal(err)
 	}
