@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -113,6 +114,34 @@ func TestArchive_fileNoExist(t *testing.T) {
 	}
 	if r != nil {
 		t.Fatal("should be nil")
+	}
+}
+
+func TestArchive_fileSymlink(t *testing.T) {
+	tf := tempFile(t)
+	dir := filepath.Dir(tf)
+	defer os.RemoveAll(dir)
+
+	sl := fmt.Sprintf("%s/link.txt", dir)
+	if err := os.Symlink(tf, sl); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := CreateArchive(dir, &ArchiveOpts{
+		Include: []string{filepath.Base(tf), filepath.Base(sl)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []string{
+		filepath.Base(sl),
+		filepath.Base(tf),
+	}
+
+	entries := testArchive(t, r)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("expected %#v to be %#v", entries, expected)
 	}
 }
 
