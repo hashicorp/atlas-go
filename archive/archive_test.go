@@ -180,6 +180,43 @@ func TestArchive_dirExtra(t *testing.T) {
 	}
 }
 
+func TestArchive_dirSymlinks(t *testing.T) {
+	tf := tempFile(t)
+	dir := filepath.Dir(tf)
+	defer os.RemoveAll(dir)
+
+	// app/assets/js/admin #=> admin
+	adminJsDir := fmt.Sprintf("%s/app/assets/js/admin", dir)
+	os.MkdirAll(adminJsDir, 0755)
+	err := ioutil.WriteFile(fmt.Sprintf("%s/application.js", adminJsDir), []byte(`
+		// Some JS content here
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	topAdminJsDir := fmt.Sprintf("%s/admin", dir)
+	if err := os.Symlink(adminJsDir, topAdminJsDir); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := CreateArchive(dir, &ArchiveOpts{
+		Include: []string{"*"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []string{
+		"app/assets/js/admin/application.j",
+		"admin/application.js",
+	}
+
+	entries := testArchive(t, r)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("expected %#v to be %#v", entries, expected)
+	}
+}
+
 func TestArchive_dirNoVCS(t *testing.T) {
 	r, err := CreateArchive(testFixture("archive-flat"), new(ArchiveOpts))
 	if err != nil {
