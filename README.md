@@ -46,7 +46,7 @@ Example
 -------
 The following example generates a new access token for a user named "sethvargo",
 generates a new Application named "frontend", and uploads the contents of a path
-to said application:
+to said application with some user-supplied metadata:
 
 ```go
 client := atlas.DefaultClient()
@@ -60,8 +60,12 @@ if err != nil {
   log.Fatalf("err creating app: %s", err)
 }
 
+metadata := map[string]interface{
+  "developed-on": runtime.GOOS,
+}
+
 data, size := functionThatReturnsAnIOReaderAndSize()
-version, err := client.UploadApp(app, data, size)
+version, err := client.UploadApp(app, metadata, data, size)
 if err != nil {
   log.Fatalf("err uploading app: %s", err)
 }

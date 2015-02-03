@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -272,6 +273,11 @@ func (hs *atlasServer) vagrantBCCreateVersionHandler(w http.ResponseWriter, r *h
 		return
 	}
 
+	expected := map[string]interface{}{"testing": true}
+	if !reflect.DeepEqual(wrapper.Version.Metadata, expected) {
+		hs.t.Fatalf("expected %q to be %q", wrapper.Version.Metadata, expected)
+	}
+
 	uploadPath := hs.URL.String() + "/_binstore/"
 
 	w.WriteHeader(http.StatusOK)
@@ -351,6 +357,15 @@ func (hs *atlasServer) vagrantCreateAppsHandler(w http.ResponseWriter, r *http.R
 func (hs *atlasServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Request) {
 	u := *hs.URL
 	u.Path = path.Join(u.Path, "_binstore/630e42d9-2364-2412-4121-18266770468e")
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r.Body); err != nil {
+		hs.t.Fatal(err)
+	}
+	expected := `{"application":{"metadata":{"testing":true}}}`
+	if buf.String() != expected {
+		hs.t.Fatalf("expected metadata to be %q, but was %q", expected, buf.String())
+	}
 
 	body, err := json.Marshal(&appVersion{
 		UploadPath: u.String(),
