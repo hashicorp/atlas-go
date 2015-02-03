@@ -55,9 +55,18 @@ func TestCreateBuildConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = client.CreateBuildConfig("hashicorp", "existing")
+	user, name := "hashicorp", "new"
+	bc, err := client.CreateBuildConfig(user, name)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if bc.User != user {
+		t.Errorf("expected %q to be %q", bc.User, user)
+	}
+
+	if bc.Name != name {
+		t.Errorf("expected %q to be %q", bc.Name, name)
 	}
 }
 

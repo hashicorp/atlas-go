@@ -244,7 +244,14 @@ func (hs *atlasServer) vagrantBCCreateHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "ok")
+	fmt.Fprintf(w, `
+    {
+       "username":"hashicorp",
+       "name":"new",
+       "tag":"hashicorp/new",
+       "private":true
+    }
+	`)
 }
 
 func (hs *atlasServer) vagrantBCCreateVersionHandler(w http.ResponseWriter, r *http.Request) {
