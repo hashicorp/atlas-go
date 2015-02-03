@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -263,6 +264,11 @@ func (hs *atlasServer) vagrantBCCreateVersionHandler(w http.ResponseWriter, r *h
 	if len(builds) == 0 {
 		w.WriteHeader(http.StatusConflict)
 		return
+	}
+
+	expected := map[string]interface{}{"testing": true}
+	if !reflect.DeepEqual(wrapper.Version.Metadata, expected) {
+		hs.t.Fatalf("expected %q to be %q", wrapper.Version.Metadata, expected)
 	}
 
 	uploadPath := hs.URL.String() + "/_binstore/"

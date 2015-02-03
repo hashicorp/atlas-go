@@ -8,6 +8,11 @@ import (
 	"log"
 )
 
+// bcWrapper is the API wrapper since the server wraps the resulting object.
+type bcWrapper struct {
+	BuildConfig *BuildConfig `json:"build_configuration"`
+}
+
 // BuildConfig represents a Packer build configuration.
 type BuildConfig struct {
 	// User is the namespace under which the build config lives
@@ -111,15 +116,18 @@ func (c *Client) CreateBuildConfig(user, name string) error {
 // and uploads the template associated with it.
 //
 // Actual API: "Create Build Config Version"
-func (c *Client) UploadBuildConfigVersion(
-	v *BuildConfigVersion, tpl io.Reader, size int64) error {
-	log.Printf("[INFO] uploading build configuration version %s (%d bytes)", v.Slug(), size)
+func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, metadata map[string]interface{},
+	data io.Reader, size int64) error {
+
+	log.Printf("[INFO] uploading build configuration version %s (%d bytes), with metadata %q",
+		v.Slug(), size, metadata)
 
 	endpoint := fmt.Sprintf("/api/v1/packer/build-configurations/%s/%s/versions",
 		v.User, v.Name)
 
 	var bodyData bcCreateWrapper
 	bodyData.Version.Builds = v.Builds
+	bodyData.Version.Metadata = metadata
 	body, err := json.Marshal(bodyData)
 	if err != nil {
 		return err
@@ -140,21 +148,16 @@ func (c *Client) UploadBuildConfigVersion(
 		return err
 	}
 
-	var data bcCreate
-	if err := decodeJSON(response, &data); err != nil {
+	var bv bcCreate
+	if err := decodeJSON(response, &bv); err != nil {
 		return err
 	}
 
-	if err := c.putFile(data.UploadPath, tpl, size); err != nil {
+	if err := c.putFile(bv.UploadPath, data, size); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// bcWrapper is the API wrapper since the server wraps the resulting object.
-type bcWrapper struct {
-	BuildConfig *BuildConfig `json:"build_configuration"`
 }
 
 // bcCreate is the struct returned when creating a build configuration.
@@ -165,6 +168,7 @@ type bcCreate struct {
 // bcCreateWrapper is the wrapper for creating a build config.
 type bcCreateWrapper struct {
 	Version struct {
-		Builds []BuildConfigBuild `json:"builds"`
+		Metadata map[string]interface{} `json:"metadata,omitempty"`
+		Builds   []BuildConfigBuild     `json:"builds"`
 	} `json:"version"`
 }
