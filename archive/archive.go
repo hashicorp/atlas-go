@@ -15,7 +15,9 @@ import (
 	"strings"
 )
 
-//
+// Archive is the resulting archive. The archive data is generally streamed
+// so the io.ReadCloser can be used to backpressure the archive progress
+// and avoid memory pressure.
 type Archive struct {
 	io.ReadCloser
 
