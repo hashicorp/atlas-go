@@ -59,9 +59,16 @@ func (o *ArchiveOpts) IsSet() bool {
 func CreateArchive(path string, opts *ArchiveOpts) (*Archive, error) {
 	log.Printf("[INFO] creating archive from %s", path)
 
-	fi, err := os.Stat(path)
+	// Dereference any symlinks and determine the real path and info
+	fi, err := os.Lstat(path)
 	if err != nil {
 		return nil, err
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		path, fi, err = readLinkFull(path, fi)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Direct file paths cannot have archive options
@@ -299,31 +306,9 @@ func copyDirWalkFn(
 		// If this is a symlink, then we need to get the symlink target
 		// rather than the symlink itself.
 		if info.Mode()&os.ModeSymlink != 0 {
-			// Read the symlink continously until we reach a concrete file.
-			target := path
-			tries := 0
-			for info.Mode()&os.ModeSymlink != 0 {
-				target, err = os.Readlink(target)
-				if err != nil {
-					return err
-				}
-				if !filepath.IsAbs(target) {
-					target, err = filepath.Abs(target)
-					if err != nil {
-						return err
-					}
-				}
-				info, err = os.Lstat(target)
-				if err != nil {
-					return err
-				}
-
-				tries++
-				if tries > 100 {
-					return fmt.Errorf(
-						"Symlink for %s is too deep, over 100 levels deep",
-						path)
-				}
+			target, info, err := readLinkFull(path, info)
+			if err != nil {
+				return err
 			}
 
 			// Copy the concrete entry for this path. This will either
@@ -410,6 +395,38 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 	}
 
 	return nil
+}
+
+func readLinkFull(path string, info os.FileInfo) (string, os.FileInfo, error) {
+	// Read the symlink continously until we reach a concrete file.
+	target := path
+	tries := 0
+	for info.Mode()&os.ModeSymlink != 0 {
+		var err error
+		target, err = os.Readlink(target)
+		if err != nil {
+			return "", nil, err
+		}
+		if !filepath.IsAbs(target) {
+			target, err = filepath.Abs(target)
+			if err != nil {
+				return "", nil, err
+			}
+		}
+		info, err = os.Lstat(target)
+		if err != nil {
+			return "", nil, err
+		}
+
+		tries++
+		if tries > 100 {
+			return "", nil, fmt.Errorf(
+				"Symlink for %s is too deep, over 100 levels deep",
+				path)
+		}
+	}
+
+	return target, info, nil
 }
 
 // readCloseRemover is an io.ReadCloser implementation that will remove
