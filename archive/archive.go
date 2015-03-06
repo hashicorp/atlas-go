@@ -340,6 +340,8 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 			if err != nil {
 				return err
 			}
+
+			return nil
 		}
 
 		if err := copyExtraFile(w, entry, path); err != nil {
@@ -354,11 +356,6 @@ func copyExtraDir(w *tar.Writer, prefix string, entry string) filepath.WalkFunc 
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
-		}
-
-		// If this path is the root directory itself, ignore
-		if path == prefix {
-			return nil
 		}
 
 		// Get the path relative to our prefix
