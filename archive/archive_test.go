@@ -176,6 +176,24 @@ func TestArchive_dirExtraDir(t *testing.T) {
 	}
 }
 
+func TestArchive_dirWithSymlink(t *testing.T) {
+	path := filepath.Join(testFixture("archive-symlink"), "link")
+	r, err := CreateArchive(path, new(ArchiveOpts))
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"link/",
+		"link/foo.txt",
+	}
+
+	entries := testArchive(t, r)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_dirNoVCS(t *testing.T) {
 	r, err := CreateArchive(testFixture("archive-flat"), new(ArchiveOpts))
 	if err != nil {

@@ -139,6 +139,12 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 		}
 	}
 
+	// Make sure the root path is absolute
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create the temporary file that we'll send the archive data to.
 	archiveF, err := ioutil.TempFile("", "atlas-archive")
 	if err != nil {
@@ -159,8 +165,64 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 	// Tar the file contents
 	tarW := tar.NewWriter(gzipW)
 
-	// Build the function that'll do all the compression
-	walkFn := func(path string, info os.FileInfo, err error) error {
+	// First, walk the path and do the normal files
+	werr := filepath.Walk(root, copyDirWalkFn(
+		tarW, root, "", opts, vcsInclude))
+	if werr == nil {
+		// If that succeeded, handle the extra files
+		werr = copyExtras(tarW, opts.Extra)
+	}
+
+	// Attempt to close all the things. If we get an error on the way
+	// and we haven't had an error yet, then record that as the critical
+	// error. But we still try to close everything.
+
+	// Close the tar writer
+	if err := tarW.Close(); err != nil && werr == nil {
+		werr = err
+	}
+
+	// Close the gzip writer
+	if err := gzipW.Close(); err != nil && werr == nil {
+		werr = err
+	}
+
+	// Flush the buffer
+	if err := bufW.Flush(); err != nil && werr == nil {
+		werr = err
+	}
+
+	// If we had an error, then close the file (removing it) and
+	// return the error.
+	if werr != nil {
+		archiveWrapper.Close()
+		return nil, werr
+	}
+
+	// Seek to the beginning
+	if _, err := archiveWrapper.F.Seek(0, 0); err != nil {
+		archiveWrapper.Close()
+		return nil, err
+	}
+
+	// Get the file information so we can get the size
+	fi, err := archiveWrapper.F.Stat()
+	if err != nil {
+		archiveWrapper.Close()
+		return nil, err
+	}
+
+	return &Archive{
+		ReadCloser: archiveWrapper,
+		Size:       fi.Size(),
+		Metadata:   metadata,
+	}, nil
+}
+
+func copyDirWalkFn(
+	tarW *tar.Writer, root string, prefix string,
+	opts *ArchiveOpts, vcsInclude []string) filepath.WalkFunc {
+	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -173,6 +235,9 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 		}
 		if subpath == "." {
 			return nil
+		}
+		if prefix != "" {
+			subpath = filepath.Join(prefix, subpath)
 		}
 
 		// If we have a list of VCS files, check that first
@@ -229,101 +294,93 @@ func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
 			return nil
 		}
 
-		// Read the symlink target. We don't track the error because
-		// it doesn't matter if there is an error.
-		target, _ := os.Readlink(path)
+		// If this is a symlink, then we need to get the symlink target
+		// rather than the symlink itself.
+		if info.Mode()&os.ModeSymlink != 0 {
+			// Read the symlink continously until we reach a concrete file.
+			target := path
+			tries := 0
+			for info.Mode()&os.ModeSymlink != 0 {
+				target, err = os.Readlink(target)
+				if err != nil {
+					return err
+				}
+				if !filepath.IsAbs(target) {
+					target, err = filepath.Abs(target)
+					if err != nil {
+						return err
+					}
+				}
+				info, err = os.Lstat(target)
+				if err != nil {
+					return err
+				}
 
-		// Build the file header for the tar entry
-		header, err := tar.FileInfoHeader(info, target)
-		if err != nil {
-			return fmt.Errorf(
-				"failed creating archive header: %s", path)
+				tries++
+				if tries > 100 {
+					return fmt.Errorf(
+						"Symlink for %s is too deep, over 100 levels deep",
+						path)
+				}
+			}
+
+			// Copy the concrete entry for this path. This will either
+			// be the file itself or just a directory entry.
+			if err := copyConcreteEntry(tarW, subpath, target, info); err != nil {
+				return err
+			}
+
+			if info.IsDir() {
+				return filepath.Walk(target, copyDirWalkFn(
+					tarW, target, subpath, opts, vcsInclude))
+			}
 		}
 
-		// Modify the header to properly be the full subpath
-		header.Name = subpath
-		if info.IsDir() {
-			header.Name += "/"
-		}
+		return copyConcreteEntry(tarW, subpath, path, info)
+	}
+}
 
-		// Write the header first to the archive.
-		if err := tarW.WriteHeader(header); err != nil {
-			return fmt.Errorf(
-				"failed writing archive header: %s", path)
-		}
+func copyConcreteEntry(
+	tarW *tar.Writer, entry string,
+	path string, info os.FileInfo) error {
+	// Build the file header for the tar entry
+	header, err := tar.FileInfoHeader(info, path)
+	if err != nil {
+		return fmt.Errorf(
+			"failed creating archive header: %s", path)
+	}
 
-		// If it is a directory, then we're done (no body to write)
-		if info.IsDir() {
-			return nil
-		}
+	// Modify the header to properly be the full entry name
+	header.Name = entry
+	if info.IsDir() {
+		header.Name += "/"
+	}
 
-		// Open the target file to write the data
-		f, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf(
-				"failed opening file '%s' to write compressed archive.", path)
-		}
-		defer f.Close()
+	// Write the header first to the archive.
+	if err := tarW.WriteHeader(header); err != nil {
+		return fmt.Errorf(
+			"failed writing archive header: %s", path)
+	}
 
-		if _, err = io.Copy(tarW, f); err != nil {
-			return fmt.Errorf(
-				"failed copying file to archive: %s", path)
-		}
-
+	// If it is a directory, then we're done (no body to write)
+	if info.IsDir() {
 		return nil
 	}
 
-	// First, walk the path and do the normal files
-	werr := filepath.Walk(root, walkFn)
-	if werr == nil {
-		// If that succeeded, handle the extra files
-		werr = copyExtras(tarW, opts.Extra)
-	}
-
-	// Attempt to close all the things. If we get an error on the way
-	// and we haven't had an error yet, then record that as the critical
-	// error. But we still try to close everything.
-
-	// Close the tar writer
-	if err := tarW.Close(); err != nil && werr == nil {
-		werr = err
-	}
-
-	// Close the gzip writer
-	if err := gzipW.Close(); err != nil && werr == nil {
-		werr = err
-	}
-
-	// Flush the buffer
-	if err := bufW.Flush(); err != nil && werr == nil {
-		werr = err
-	}
-
-	// If we had an error, then close the file (removing it) and
-	// return the error.
-	if werr != nil {
-		archiveWrapper.Close()
-		return nil, werr
-	}
-
-	// Seek to the beginning
-	if _, err := archiveWrapper.F.Seek(0, 0); err != nil {
-		archiveWrapper.Close()
-		return nil, err
-	}
-
-	// Get the file information so we can get the size
-	fi, err := archiveWrapper.F.Stat()
+	// Open the real file to write the data
+	f, err := os.Open(path)
 	if err != nil {
-		archiveWrapper.Close()
-		return nil, err
+		return fmt.Errorf(
+			"failed opening file '%s' to write compressed archive.", path)
+	}
+	defer f.Close()
+
+	if _, err = io.Copy(tarW, f); err != nil {
+		return fmt.Errorf(
+			"failed copying file to archive: %s", path)
 	}
 
-	return &Archive{
-		ReadCloser: archiveWrapper,
-		Size:       fi.Size(),
-		Metadata:   metadata,
-	}, nil
+	return nil
 }
 
 func copyExtras(w *tar.Writer, extra map[string]string) error {
