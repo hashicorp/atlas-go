@@ -258,7 +258,7 @@ func copyDirWalkFn(
 		}
 
 		// If include is present, we only include what is listed
-		if len(opts.Include) > 0 {
+		if opts != nil && len(opts.Include) > 0 {
 			skip = true
 			for _, include := range opts.Include {
 				match, err := filepath.Match(include, subpath)
@@ -273,14 +273,16 @@ func copyDirWalkFn(
 		}
 
 		// If exclude, it is one last gate to excluding files
-		for _, exclude := range opts.Exclude {
-			match, err := filepath.Match(exclude, subpath)
-			if err != nil {
-				return err
-			}
-			if match {
-				skip = true
-				break
+		if opts != nil {
+			for _, exclude := range opts.Exclude {
+				match, err := filepath.Match(exclude, subpath)
+				if err != nil {
+					return err
+				}
+				if match {
+					skip = true
+					break
+				}
 			}
 		}
 
@@ -390,88 +392,21 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 			return err
 		}
 
+		// No matter what, write the entry. If this is a directory,
+		// it'll just write the directory header.
+		if err := copyConcreteEntry(w, entry, path, info); err != nil {
+			return err
+		}
+
 		// If this is a directory, then we walk the internal contents
-		// and copy it.
+		// and copy those as well.
 		if info.IsDir() {
-			err := filepath.Walk(path, copyExtraDir(w, path, entry))
+			err := filepath.Walk(path, copyDirWalkFn(
+				w, path, entry, nil, nil))
 			if err != nil {
 				return err
 			}
-
-			return nil
 		}
-
-		if err := copyExtraFile(w, entry, path); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func copyExtraDir(w *tar.Writer, prefix string, entry string) filepath.WalkFunc {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Get the path relative to our prefix
-		relpath, err := filepath.Rel(prefix, path)
-		if err != nil {
-			return err
-		}
-
-		entryCurrent := filepath.Join(entry, relpath)
-		return copyExtraFile(w, entryCurrent, path)
-	}
-}
-
-func copyExtraFile(w *tar.Writer, entry string, path string) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-
-	// Read the symlink target. We don't track the error because
-	// it doesn't matter if there is an error.
-	target, _ := os.Readlink(path)
-
-	// Build the file header for the tar entry
-	header, err := tar.FileInfoHeader(info, target)
-	if err != nil {
-		return fmt.Errorf(
-			"failed creating archive header: %s", path)
-	}
-
-	// Modify the header to properly be the full subpath
-	header.Name = entry
-	if info.IsDir() {
-		header.Name += "/"
-	}
-
-	// Write the header first to the archive.
-	if err := w.WriteHeader(header); err != nil {
-		return fmt.Errorf(
-			"failed writing archive header: %s", path)
-	}
-
-	// If it is a directory, then we're done (no body to write)
-	if info.IsDir() {
-		return nil
-	}
-
-	// Open the target file to write the data
-	f, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf(
-			"failed opening file '%s' to write compressed archive.", path)
-	}
-
-	_, err = io.Copy(w, f)
-	f.Close()
-	if err != nil {
-		return fmt.Errorf(
-			"failed copying file to archive: %s", path)
 	}
 
 	return nil
