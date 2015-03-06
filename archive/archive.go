@@ -333,44 +333,91 @@ func copyExtras(w *tar.Writer, extra map[string]string) error {
 			return err
 		}
 
-		// Read the symlink target. We don't track the error because
-		// it doesn't matter if there is an error.
-		target, _ := os.Readlink(path)
-
-		// Build the file header for the tar entry
-		header, err := tar.FileInfoHeader(info, target)
-		if err != nil {
-			return fmt.Errorf(
-				"failed creating archive header: %s", path)
-		}
-
-		// Modify the header to properly be the full subpath
-		header.Name = entry
-
-		// Write the header first to the archive.
-		if err := w.WriteHeader(header); err != nil {
-			return fmt.Errorf(
-				"failed writing archive header: %s", path)
-		}
-
-		// If it is a directory, then we're done (no body to write)
+		// If this is a directory, then we walk the internal contents
+		// and copy it.
 		if info.IsDir() {
+			err := filepath.Walk(path, copyExtraDir(w, path, entry))
+			if err != nil {
+				return err
+			}
+		}
+
+		if err := copyExtraFile(w, entry, path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyExtraDir(w *tar.Writer, prefix string, entry string) filepath.WalkFunc {
+	return func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// If this path is the root directory itself, ignore
+		if path == prefix {
 			return nil
 		}
 
-		// Open the target file to write the data
-		f, err := os.Open(path)
+		// Get the path relative to our prefix
+		relpath, err := filepath.Rel(prefix, path)
 		if err != nil {
-			return fmt.Errorf(
-				"failed opening file '%s' to write compressed archive.", path)
+			return err
 		}
 
-		_, err = io.Copy(w, f)
-		f.Close()
-		if err != nil {
-			return fmt.Errorf(
-				"failed copying file to archive: %s", path)
-		}
+		entryCurrent := filepath.Join(entry, relpath)
+		return copyExtraFile(w, entryCurrent, path)
+	}
+}
+
+func copyExtraFile(w *tar.Writer, entry string, path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	// Read the symlink target. We don't track the error because
+	// it doesn't matter if there is an error.
+	target, _ := os.Readlink(path)
+
+	// Build the file header for the tar entry
+	header, err := tar.FileInfoHeader(info, target)
+	if err != nil {
+		return fmt.Errorf(
+			"failed creating archive header: %s", path)
+	}
+
+	// Modify the header to properly be the full subpath
+	header.Name = entry
+	if info.IsDir() {
+		header.Name += "/"
+	}
+
+	// Write the header first to the archive.
+	if err := w.WriteHeader(header); err != nil {
+		return fmt.Errorf(
+			"failed writing archive header: %s", path)
+	}
+
+	// If it is a directory, then we're done (no body to write)
+	if info.IsDir() {
+		return nil
+	}
+
+	// Open the target file to write the data
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf(
+			"failed opening file '%s' to write compressed archive.", path)
+	}
+
+	_, err = io.Copy(w, f)
+	f.Close()
+	if err != nil {
+		return fmt.Errorf(
+			"failed copying file to archive: %s", path)
 	}
 
 	return nil
