@@ -74,6 +74,9 @@ func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/packer/build-configurations", hs.vagrantBCCreateHandler)
 	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing", hs.vagrantBCExistingHandler)
 	mux.HandleFunc("/api/v1/packer/build-configurations/hashicorp/existing/versions", hs.vagrantBCCreateVersionHandler)
+
+	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions/latest", hs.tfConfigLatest)
+	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions", hs.tfConfigUpload)
 }
 
 func (hs *atlasServer) statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +119,49 @@ func (hs *atlasServer) authenticationHandler(w http.ResponseWriter, r *http.Requ
 	} else {
 		w.WriteHeader(http.StatusUnauthorized)
 	}
+}
+
+func (hs *atlasServer) tfConfigLatest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprintf(w, `
+	{
+		"version": {
+			"version": 5,
+			"metadata": { "foo": "bar" }
+		}
+	}
+	`)
+}
+
+func (hs *atlasServer) tfConfigUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r.Body); err != nil {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if buf.Len() == 0 {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	uploadPath := hs.URL.String() + "/_binstore/"
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `
+	{
+		"upload_path": "%s"
+	}
+	`, uploadPath)
 }
 
 func (hs *atlasServer) vagrantArtifactExistingHandler(w http.ResponseWriter, r *http.Request) {
