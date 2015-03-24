@@ -44,7 +44,7 @@ func (c *Client) TerraformConfigLatest(user, name string) (*TerraformConfigVersi
 func (c *Client) CreateTerraformConfigVersion(
 	user string, name string,
 	version *TerraformConfigVersion,
-	data io.Reader, size int64) error {
+	data io.Reader, size int64) (int, error) {
 	log.Printf("[INFO] creating terraform configuration %s/%s", user, name)
 
 	endpoint := fmt.Sprintf(
@@ -53,7 +53,7 @@ func (c *Client) CreateTerraformConfigVersion(
 		Version: version,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	request, err := c.Request("POST", endpoint, &RequestOptions{
@@ -63,28 +63,29 @@ func (c *Client) CreateTerraformConfigVersion(
 		},
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	response, err := checkResp(c.HTTPClient.Do(request))
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	var result tfConfigVersionCreate
 	if err := decodeJSON(response, &result); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := c.putFile(result.UploadPath, data, size); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return result.Version, nil
 }
 
 type tfConfigVersionCreate struct {
 	UploadPath string `json:"upload_path"`
+	Version    int
 }
 
 type tfConfigVersionWrapper struct {

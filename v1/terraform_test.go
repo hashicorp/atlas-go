@@ -46,9 +46,12 @@ func TestCreateTerraformConfigVersion(t *testing.T) {
 	}
 
 	data := new(bytes.Buffer)
-	err = client.CreateTerraformConfigVersion(
+	vsn, err := client.CreateTerraformConfigVersion(
 		"hashicorp", "existing", v, data, int64(data.Len()))
 	if err != nil {
 		t.Fatal(err)
+	}
+	if vsn != 5 {
+		t.Fatalf("bad: %v", vsn)
 	}
 }

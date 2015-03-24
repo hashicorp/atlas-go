@@ -160,6 +160,7 @@ func (hs *atlasServer) tfConfigUpload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `
 	{
+		"version": 5,
 		"upload_path": "%s"
 	}
 	`, uploadPath)
