@@ -21,8 +21,9 @@ func TestTerraformConfigLatest(t *testing.T) {
 	}
 
 	expected := &TerraformConfigVersion{
-		Version:  5,
-		Metadata: map[string]string{"foo": "bar"},
+		Version:   5,
+		Metadata:  map[string]string{"foo": "bar"},
+		Variables: map[string]string{"foo": "bar"},
 	}
 
 	if !reflect.DeepEqual(actual, expected) {

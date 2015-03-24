@@ -131,7 +131,8 @@ func (hs *atlasServer) tfConfigLatest(w http.ResponseWriter, r *http.Request) {
 	{
 		"version": {
 			"version": 5,
-			"metadata": { "foo": "bar" }
+			"metadata": { "foo": "bar" },
+			"variables": { "foo": "bar" }
 		}
 	}
 	`)
