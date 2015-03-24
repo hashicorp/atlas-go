@@ -27,6 +27,9 @@ func (c *Client) TerraformConfigLatest(user, name string) (*TerraformConfigVersi
 	}
 
 	response, err := checkResp(c.HTTPClient.Do(request))
+	if err == ErrNotFound {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
