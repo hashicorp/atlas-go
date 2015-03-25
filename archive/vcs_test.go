@@ -1,7 +1,9 @@
 package archive
 
 import (
+	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -46,6 +48,37 @@ func TestGitBranch(t *testing.T) {
 	expected := "master"
 	if branch != expected {
 		t.Fatalf("expected %q to be %q", branch, expected)
+	}
+}
+
+func TestGitBranch_detached(t *testing.T) {
+	if !testHasGit {
+		t.Skip("git not found")
+	}
+
+	testDir := testFixture("archive-git")
+	oldName := filepath.Join(testDir, "DOTgit")
+	newName := filepath.Join(testDir, ".git")
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("err: %#v", err)
+	}
+
+	// Copy and then remove the .git dir instead of moving and replacing like
+	// other tests, since the checkout below is going to write to the reflog and
+	// the index
+	runCommand(t, pwd, "cp", "-r", oldName, newName)
+	defer runCommand(t, pwd, "rm", "-rf", newName)
+
+	runCommand(t, testDir, "git", "checkout", "--detach")
+
+	branch, err := gitBranch(testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if branch != "" {
+		t.Fatalf("expected branch to be empty, but it was: %s", branch)
 	}
 }
 
@@ -128,5 +161,55 @@ func TestVCSMetadata_git(t *testing.T) {
 
 	if !reflect.DeepEqual(metadata, expected) {
 		t.Fatalf("expected %+v to be %+v", metadata, expected)
+	}
+}
+
+func TestVCSMetadata_git_detached(t *testing.T) {
+	if !testHasGit {
+		t.Skip("git not found")
+	}
+
+	testDir := testFixture("archive-git")
+	oldName := filepath.Join(testDir, "DOTgit")
+	newName := filepath.Join(testDir, ".git")
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("err: %#v", err)
+	}
+
+	// Copy and then remove the .git dir instead of moving and replacing like
+	// other tests, since the checkout below is going to write to the reflog and
+	// the index
+	runCommand(t, pwd, "cp", "-r", oldName, newName)
+	defer runCommand(t, pwd, "rm", "-rf", newName)
+
+	runCommand(t, testDir, "git", "checkout", "--detach")
+
+	metadata, err := vcsMetadata(testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := map[string]string{
+		"branch":          "",
+		"commit":          "7525d17cbbb56f3253a20903ffddc07c6c935c76",
+		"remote.origin":   "https://github.com/hashicorp/origin.git",
+		"remote.upstream": "https://github.com/hashicorp/upstream.git",
+	}
+
+	if !reflect.DeepEqual(metadata, expected) {
+		t.Fatalf("expected %+v to be %+v", metadata, expected)
+	}
+}
+
+func runCommand(t *testing.T, path, command string, args ...string) {
+	var stderr, stdout bytes.Buffer
+	cmd := exec.Command(command, args...)
+	cmd.Dir = path
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("error running command: %s\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
 	}
 }

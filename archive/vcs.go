@@ -215,6 +215,8 @@ func vcsMetadata(path string) (map[string]string, error) {
 	return nil, nil
 }
 
+const ignorableDetachedHeadError = "HEAD is not a symbolic ref"
+
 // gitBranch gets and returns the current git branch for the Git repository
 // at the given path. It is assumed that the VCS is git.
 func gitBranch(path string) (string, error) {
@@ -225,8 +227,13 @@ func gitBranch(path string) (string, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("error getting git branch: %s\nstdout: %s\nstderr: %s",
-			err, stdout.String(), stderr.String())
+		if strings.Contains(stderr.String(), ignorableDetachedHeadError) {
+			return "", nil
+		} else {
+			return "",
+				fmt.Errorf("error getting git branch: %s\nstdout: %s\nstderr: %s",
+					err, stdout.String(), stderr.String())
+		}
 	}
 
 	branch := strings.TrimSpace(stdout.String())
