@@ -12,8 +12,8 @@ import (
 // Terraform configuration.
 type TerraformConfigVersion struct {
 	Version   int
-	Metadata  map[string]string
-	Variables map[string]string
+	Metadata  map[string]string `json:"metadata"`
+	Variables map[string]string `json:"variables"`
 }
 
 // TerraformConfigLatest returns the latest Terraform configuration version.
