@@ -288,6 +288,30 @@ func TestArchive_dirInclude(t *testing.T) {
 	}
 }
 
+func TestArchive_dirIncludeStar(t *testing.T) {
+	opts := &ArchiveOpts{
+		Include: []string{"build/**/*"},
+	}
+
+	r, err := CreateArchive(testFixture("archive-subdir-splat"), opts)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"build/",
+		"build/darwin-amd64/",
+		"build/darwin-amd64/build.txt",
+		"build/linux-amd64/",
+		"build/linux-amd64/build.txt",
+	}
+
+	entries := testArchive(t, r)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_git(t *testing.T) {
 	if !testHasGit {
 		t.Log("git not found, skipping")
