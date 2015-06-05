@@ -13,7 +13,7 @@ build:
 
 test:
 	go test $(TEST) $(TESTARGS) -timeout=3s -parallel=4
-	go test $(TEST) -race
 	go vet $(TEST)
+	go test $(TEST) -race
 
 .PHONY: all deps build test

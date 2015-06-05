@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"testing"
 )
@@ -177,6 +178,10 @@ func TestArchive_dirExtraDir(t *testing.T) {
 }
 
 func TestArchive_dirSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("git symlinks don't work on Windows")
+	}
+
 	path := filepath.Join(testFixture("archive-symlink"), "link", "link")
 	r, err := CreateArchive(path, new(ArchiveOpts))
 	if err != nil {
@@ -194,6 +199,10 @@ func TestArchive_dirSymlink(t *testing.T) {
 }
 
 func TestArchive_dirWithSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("git symlinks don't work on Windows")
+	}
+
 	path := filepath.Join(testFixture("archive-symlink"), "link")
 	r, err := CreateArchive(path, new(ArchiveOpts))
 	if err != nil {
@@ -321,8 +330,9 @@ func TestArchive_git(t *testing.T) {
 	// Git doesn't allow nested ".git" directories so we do some hackiness
 	// here to get around that...
 	testDir := testFixture("archive-git")
-	oldName := filepath.Join(testDir, "DOTgit")
-	newName := filepath.Join(testDir, ".git")
+	oldName := filepath.ToSlash(filepath.Join(testDir, "DOTgit"))
+	newName := filepath.ToSlash(filepath.Join(testDir, ".git"))
+	os.Remove(newName)
 	if err := os.Rename(oldName, newName); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -372,8 +382,9 @@ func TestArchive_gitSubdir(t *testing.T) {
 	// Git doesn't allow nested ".git" directories so we do some hackiness
 	// here to get around that...
 	testDir := testFixture("archive-git")
-	oldName := filepath.Join(testDir, "DOTgit")
-	newName := filepath.Join(testDir, ".git")
+	oldName := filepath.ToSlash(filepath.Join(testDir, "DOTgit"))
+	newName := filepath.ToSlash(filepath.Join(testDir, ".git"))
+	os.Remove(newName)
 	if err := os.Rename(oldName, newName); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -417,7 +428,7 @@ func TestArchive_hg(t *testing.T) {
 
 	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
-		t.Fatalf("bad: %#v", entries)
+		t.Fatalf("\n-- Expected --\n%#v\n-- Found --\n%#v", expected, entries)
 	}
 }
 
@@ -440,7 +451,7 @@ func TestArchive_hgSubdir(t *testing.T) {
 
 	entries := testArchive(t, r)
 	if !reflect.DeepEqual(entries, expected) {
-		t.Fatalf("bad: %#v", entries)
+		t.Fatalf("\n-- Expected --\n%#v\n-- Found --\n%#v", expected, entries)
 	}
 }
 
