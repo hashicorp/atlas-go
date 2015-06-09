@@ -12,5 +12,6 @@ build:
 
 test: deps
 	go list ./... | xargs -n1 go test -timeout=3s
+	go vet ./...
 
 .PHONY: all deps build test
