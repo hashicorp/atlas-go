@@ -81,11 +81,11 @@ func CreateArchive(path string, opts *ArchiveOpts) (*Archive, error) {
 	if fi.IsDir() {
 		return archiveDir(path, opts)
 	} else {
-		return archiveFile(path, opts)
+		return archiveFile(path)
 	}
 }
 
-func archiveFile(path string, opts *ArchiveOpts) (*Archive, error) {
+func archiveFile(path string) (*Archive, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
