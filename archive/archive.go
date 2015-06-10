@@ -129,7 +129,7 @@ func archiveFile(path string) (*Archive, error) {
 }
 
 func archiveDir(root string, opts *ArchiveOpts) (*Archive, error) {
-	
+
 	var vcsInclude []string
 	var metadata map[string]string
 	if opts.VCS {
@@ -262,7 +262,7 @@ func copyDirWalkFn(
 				path = filepath.ToSlash(path)
 				subpath, err := filepath.Rel(root, path)
 				subpath = filepath.ToSlash(subpath)
-				
+
 				if err != nil {
 					return errFunc(err)
 				}
@@ -280,7 +280,7 @@ func copyDirWalkFn(
 
 	return func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
-		
+
 		if err != nil {
 			return err
 		}
@@ -299,7 +299,6 @@ func copyDirWalkFn(
 		}
 		// Windows
 		subpath = filepath.ToSlash(subpath)
-		
 
 		// If we have a list of VCS files, check that first
 		skip := false
@@ -378,6 +377,7 @@ func copyConcreteEntry(
 	path string, info os.FileInfo) error {
 	// Windows
 	path = filepath.ToSlash(path)
+
 	// Build the file header for the tar entry
 	header, err := tar.FileInfoHeader(info, path)
 	if err != nil {

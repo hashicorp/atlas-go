@@ -22,6 +22,7 @@ func setupGitFixtures(t *testing.T) (string, func()) {
 			os.Remove(newName)
 		}
 	}
+
 	// We call this BEFORE and after each setup for tests that make lower-level
 	// calls like runCommand
 	cleanup()
