@@ -131,6 +131,27 @@ func TestLogin_success(t *testing.T) {
 	}
 }
 
+func TestRequest_tokenAuth(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.Token = "a.atlasv1.b"
+
+	request, err := client.Request("GET", "/api/v1/token", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = checkResp(client.HTTPClient.Do(request))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRequest_getsData(t *testing.T) {
 	server := newTestAtlasServer(t)
 	defer server.Stop()
