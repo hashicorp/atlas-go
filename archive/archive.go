@@ -412,7 +412,7 @@ func copyConcreteEntry(
 
 	if _, err = io.Copy(tarW, f); err != nil {
 		return fmt.Errorf(
-			"failed copying file to archive: %s", path)
+			"failed copying file to archive: %s, %s", path, err)
 	}
 
 	return nil
