@@ -11,8 +11,8 @@ import (
 func TestDefaultClient_url(t *testing.T) {
 	client := DefaultClient()
 
-	if client.URL.String() != atlasURL {
-		t.Fatalf("expected %q to be %q", client.URL.String(), atlasURL)
+	if client.URL.String() != atlasEndpoint {
+		t.Fatalf("expected %q to be %q", client.URL.String(), atlasEndpoint)
 	}
 }
 

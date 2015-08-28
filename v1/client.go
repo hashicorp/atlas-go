@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// atlasURL is the default base URL for connecting to Atlas.
-	atlasURL = "https://atlas.hashicorp.com"
+	// atlasEndpoint is the default base URL for connecting to Atlas.
+	atlasEndpoint = "https://atlas.hashicorp.com"
 
 	// atlasTokenHeader is the header key used for authenticating with Atlas
 	atlasTokenHeader = "X-Atlas-Token"
@@ -58,7 +58,7 @@ type Client struct {
 
 // DefaultClient returns a client that connects to the Atlas API.
 func DefaultClient() *Client {
-	client, err := NewClient(atlasURL)
+	client, err := NewClient(atlasEndpoint)
 	if err != nil {
 		panic(err)
 	}
