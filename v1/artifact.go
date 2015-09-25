@@ -54,7 +54,7 @@ type UploadArtifactOpts struct {
 	File     io.Reader
 	FileSize int64
 	Metadata map[string]string
-	BuildID  int
+	BuildID  string
 }
 
 // MarshalJSON converts the UploadArtifactOpts into a JSON struct.
