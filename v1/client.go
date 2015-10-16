@@ -68,7 +68,7 @@ func DefaultClient() *Client {
 
 // NewClient creates a new Atlas Client from the given URL (as a string). If
 // the URL cannot be parsed, an error is returned. The HTTPClient is set to
-// http.DefaultClient, but this can be changed programmatically by setting
+// an empty http.Client, but this can be changed programmatically by setting
 // client.HTTPClient. The user can also programmatically set the URL as a
 // *url.URL.
 func NewClient(urlString string) (*Client, error) {
@@ -100,7 +100,7 @@ func NewClient(urlString string) (*Client, error) {
 
 // init() sets defaults on the client.
 func (c *Client) init() error {
-	c.HTTPClient = http.DefaultClient
+	c.HTTPClient = &http.Client{}
 	return nil
 }
 

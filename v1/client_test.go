@@ -1,7 +1,6 @@
 package atlas
 
 import (
-	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -45,13 +44,9 @@ func TestNewClient_parsesURL(t *testing.T) {
 }
 
 func TestNewClient_setsDefaultHTTPClient(t *testing.T) {
-	client, err := NewClient("https://example.com/foo/bar")
+	_, err := NewClient("https://example.com/foo/bar")
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(client.HTTPClient, http.DefaultClient) {
-		t.Fatalf("expected %#v to equal %#v", client.HTTPClient, http.DefaultClient)
 	}
 }
 
