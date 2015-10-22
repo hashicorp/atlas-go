@@ -12,6 +12,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
+
+	"github.com/hashicorp/cleanhttp"
 )
 
 const (
@@ -100,7 +102,7 @@ func NewClient(urlString string) (*Client, error) {
 
 // init() sets defaults on the client.
 func (c *Client) init() error {
-	c.HTTPClient = &http.Client{}
+	c.HTTPClient = cleanhttp.DefaultClient()
 	return nil
 }
 
