@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hashicorp/cleanhttp"
+	"github.com/hashicorp/go-cleanhttp"
 )
 
 const (
