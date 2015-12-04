@@ -20,6 +20,10 @@ const (
 	// atlasDefaultEndpoint is the default base URL for connecting to Atlas.
 	atlasDefaultEndpoint = "https://atlas.hashicorp.com"
 
+	// atlasEndpointEnvVar is the environment variable that overrrides the
+	// default Atlas address.
+	atlasEndpointEnvVar = "ATLAS_ADDRESS"
+
 	// atlasTokenHeader is the header key used for authenticating with Atlas
 	atlasTokenHeader = "X-Atlas-Token"
 )
@@ -60,7 +64,7 @@ type Client struct {
 
 // DefaultClient returns a client that connects to the Atlas API.
 func DefaultClient() *Client {
-	atlasEndpoint := os.Getenv("ATLAS_ADDRESS")
+	atlasEndpoint := os.Getenv(atlasEndpointEnvVar)
 
 	if atlasEndpoint == "" {
 		atlasEndpoint = atlasDefaultEndpoint
