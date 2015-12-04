@@ -60,7 +60,13 @@ type Client struct {
 
 // DefaultClient returns a client that connects to the Atlas API.
 func DefaultClient() *Client {
-	client, err := NewClient(atlasDefaultEndpoint)
+	atlasEndpoint := os.Getenv("ATLAS_ADDRESS")
+
+	if atlasEndpoint == "" {
+		atlasEndpoint = atlasDefaultEndpoint
+	}
+
+	client, err := NewClient(atlasEndpoint)
 	if err != nil {
 		panic(err)
 	}

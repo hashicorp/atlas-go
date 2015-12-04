@@ -2,6 +2,7 @@ package atlas
 
 import (
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -12,6 +13,22 @@ func TestDefaultClient_url(t *testing.T) {
 
 	if client.URL.String() != atlasDefaultEndpoint {
 		t.Fatalf("expected %q to be %q", client.URL.String(), atlasDefaultEndpoint)
+	}
+}
+
+func TestDefaultClient_urlFromEnvVar(t *testing.T) {
+	otherEndpoint := "http://127.0.0.1:1234"
+
+	err := os.Setenv("ATLAS_ADDRESS", otherEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Unsetenv("ATLAS_ADDRESS")
+
+	client := DefaultClient()
+
+	if client.URL.String() != otherEndpoint {
+		t.Fatalf("expected %q to be %q", client.URL.String(), otherEndpoint)
 	}
 }
 
