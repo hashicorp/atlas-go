@@ -17,13 +17,13 @@ func TestDefaultClient_url(t *testing.T) {
 }
 
 func TestDefaultClient_urlFromEnvVar(t *testing.T) {
+	defer os.Setenv(atlasEndpointEnvVar, os.Getenv(atlasEndpointEnvVar))
 	otherEndpoint := "http://127.0.0.1:1234"
 
 	err := os.Setenv(atlasEndpointEnvVar, otherEndpoint)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv(atlasEndpointEnvVar)
 
 	client := DefaultClient()
 
