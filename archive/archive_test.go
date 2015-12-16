@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -191,7 +190,7 @@ func TestArchive_dirMode(t *testing.T) {
 	}
 
 	expected := []string{
-		"file.txt-100755",
+		"file.txt-exec",
 	}
 
 	entries := testArchive(t, r, true)
@@ -523,7 +522,14 @@ func testArchive(t *testing.T, r *Archive, detailed bool) []string {
 
 		text := hdr.Name
 		if detailed {
-			text = fmt.Sprintf("%s-%o", hdr.Name, hdr.Mode)
+			// Check if the file is executable. We use these stub names
+			// to compensate for umask differences in test environments
+			// and limitations in using "git clone".
+			if hdr.FileInfo().Mode()&0111 != 0 {
+				text = hdr.Name + "-exec"
+			} else {
+				text = hdr.Name + "-reg"
+			}
 		}
 
 		result = append(result, text)
