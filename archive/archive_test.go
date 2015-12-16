@@ -191,7 +191,7 @@ func TestArchive_dirMode(t *testing.T) {
 	}
 
 	expected := []string{
-		"file.txt-100777",
+		"file.txt-100755",
 	}
 
 	entries := testArchive(t, r, true)
