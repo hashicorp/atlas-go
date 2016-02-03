@@ -103,10 +103,11 @@ func TestArtifactFileURL(t *testing.T) {
 	}
 
 	v := &ArtifactVersion{
-		User: "foo",
-		Name: "bar",
-		Type: "vagrant-box",
-		File: true,
+		User:    "foo",
+		Name:    "bar",
+		Type:    "vagrant-box",
+		Version: "baz",
+		File:    true,
 	}
 
 	u, err := client.ArtifactFileURL(v)
@@ -115,7 +116,7 @@ func TestArtifactFileURL(t *testing.T) {
 	}
 
 	expected := *server.URL
-	expected.Path = "/api/v1/artifacts/foo/bar/vagrant-box/file"
+	expected.Path = "/api/v1/artifacts/foo/bar/vagrant-box/baz/file"
 	if u.String() != expected.String() {
 		t.Fatalf("unexpected: %s\n\nexpected: %s", u, expected.String())
 	}
@@ -131,9 +132,10 @@ func TestArtifactFileURL_nil(t *testing.T) {
 	}
 
 	v := &ArtifactVersion{
-		User: "foo",
-		Name: "bar",
-		Type: "vagrant-box",
+		User:    "foo",
+		Name:    "bar",
+		Type:    "vagrant-box",
+		Version: "baz",
 	}
 
 	u, err := client.ArtifactFileURL(v)

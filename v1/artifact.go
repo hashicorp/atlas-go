@@ -25,7 +25,7 @@ type ArtifactVersion struct {
 	Tag      string            `json:",omitempty"`
 	Type     string            `json:"artifact_type"`
 	ID       string            `json:"id"`
-	Version  int               `json:"version"`
+	Version  string            `json:"version"`
 	Metadata map[string]string `json:"metadata"`
 	File     bool              `json:"file"`
 	Slug     string            `json:"slug"`
@@ -188,8 +188,8 @@ func (c *Client) ArtifactFileURL(av *ArtifactVersion) (*url.URL, error) {
 	}
 
 	u := *c.URL
-	u.Path = fmt.Sprintf("/api/v1/artifacts/%s/%s/%s/file",
-		av.User, av.Name, av.Type)
+	u.Path = fmt.Sprintf("/api/v1/artifacts/%s/%s/%s/%s/file",
+		av.User, av.Name, av.Type, av.Version)
 	return &u, nil
 }
 
