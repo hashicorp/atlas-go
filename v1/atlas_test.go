@@ -21,7 +21,7 @@ type atlasServer struct {
 
 	t      *testing.T
 	ln     net.Listener
-	server http.Server
+	server *http.Server
 }
 
 type clientTestResp struct {
@@ -48,7 +48,8 @@ func newTestAtlasServer(t *testing.T) *atlasServer {
 	mux := http.NewServeMux()
 	hs.setupRoutes(mux)
 
-	var server http.Server
+	// TODO: this should be using httptest.Server
+	server := &http.Server{}
 	server.Handler = mux
 	hs.server = server
 	go server.Serve(ln)
