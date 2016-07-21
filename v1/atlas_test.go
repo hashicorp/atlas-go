@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -21,6 +22,13 @@ type atlasServer struct {
 	t      *testing.T
 	ln     net.Listener
 	server http.Server
+}
+
+type clientTestResp struct {
+	RawPath string
+	Host    string
+	Header  http.Header
+	Body    string
 }
 
 func newTestAtlasServer(t *testing.T) *atlasServer {
@@ -78,6 +86,34 @@ func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions/latest", hs.tfConfigLatest)
 	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions", hs.tfConfigUpload)
+
+	// add an endpoint for testing arbitrary requests
+	mux.HandleFunc("/_test", hs.testHandler)
+}
+
+// testHandler echos the data sent from the client in a json object
+func (hs *atlasServer) testHandler(w http.ResponseWriter, r *http.Request) {
+
+	req := &clientTestResp{
+		RawPath: r.URL.RawPath,
+		Host:    r.Host,
+		Header:  r.Header,
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		// log this, since an error should fail the test anyway
+		hs.t.Log("error reading body:", err)
+	}
+
+	req.Body = string(body)
+
+	js, _ := json.Marshal(req)
+	if err != nil {
+		hs.t.Log("error marshaling req:", err)
+	}
+
+	w.Write(js)
 }
 
 func (hs *atlasServer) statusHandler(w http.ResponseWriter, r *http.Request) {
