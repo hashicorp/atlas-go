@@ -266,3 +266,44 @@ func TestRequestJSON_decodesData(t *testing.T) {
 		t.Fatal("expected decoded response to be Ok, but was not")
 	}
 }
+
+// check that our DefaultHeader works correctly, along with it providing
+// User-Agent
+func TestClient_defaultHeaders(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testHeader := "Atlas-Test"
+	testHeaderVal := "default header test"
+	client.DefaultHeader.Set(testHeader, testHeaderVal)
+
+	request, err := client.Request("GET", "/_test", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response, err := checkResp(client.HTTPClient.Do(request))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	decoded := &clientTestResp{}
+	if err := decodeJSON(response, &decoded); err != nil {
+		t.Fatal(err)
+	}
+
+	// Make sure User-Agent is set correctly
+	if decoded.Header.Get("User-Agent") != userAgent {
+		t.Fatal("User-Agent reported as", decoded.Header.Get("User-Agent"))
+	}
+
+	// look for our test header
+	if decoded.Header.Get(testHeader) != testHeaderVal {
+		t.Fatalf("DefaultHeader %q reported as %q", testHeader, testHeaderVal)
+	}
+}
