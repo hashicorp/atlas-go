@@ -53,7 +53,7 @@ func (o *ArchiveOpts) IsSet() bool {
 // Constants related to setting special values for Extra in ArchiveOpts.
 const (
 	// ExtraEntryDir just creates the Extra key as a directory entry.
-	ExtraEntryDir string = ""
+	ExtraEntryDir = ""
 )
 
 // CreateArchive takes the given path and ArchiveOpts and archives it.
