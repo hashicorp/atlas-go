@@ -177,6 +177,30 @@ func TestArchive_dirExtraDir(t *testing.T) {
 	}
 }
 
+func TestArchive_dirExtraDirHeader(t *testing.T) {
+	opts := &ArchiveOpts{
+		Extra: map[string]string{
+			"foo": ExtraEntryDir,
+		},
+	}
+
+	r, err := CreateArchive(testFixture("archive-flat"), opts)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"baz.txt",
+		"foo.txt",
+		"foo/",
+	}
+
+	entries := testArchive(t, r, false)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_dirMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("modes don't work on Windows")
