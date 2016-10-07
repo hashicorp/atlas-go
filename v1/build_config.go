@@ -180,6 +180,6 @@ type bcCreateWrapper struct {
 	Version struct {
 		Metadata map[string]interface{} `json:"metadata,omitempty"`
 		Builds   []BuildConfigBuild     `json:"builds"`
-		Vars     map[string]string      `json:"vars",omitempty`
+		Vars     map[string]string      `json:"vars,omitempty"`
 	} `json:"version"`
 }
