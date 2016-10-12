@@ -1,6 +1,7 @@
 package atlas
 
 import (
+	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -58,6 +59,30 @@ func TestNewClient_parsesURL(t *testing.T) {
 	if !reflect.DeepEqual(client.URL, expected) {
 		t.Fatalf("expected %q to equal %q", client.URL, expected)
 	}
+}
+
+func TestNewClient_TLSVerify(t *testing.T) {
+	client, err := NewClient("https://example.com/foo/bar")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client.HTTPClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify != false {
+		t.Fatal("Expected InsecureSkipVerify to be false")
+	}
+}
+
+func TestNewClient_TLSNoVerify(t *testing.T) {
+	os.Setenv("ATLAS_TLS_NOVERIFY", "1")
+	client, err := NewClient("https://example.com/foo/bar")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client.HTTPClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify != true {
+		t.Fatal("Expected InsecureSkipVerify to be true when ATLAS_TLS_NOVERIFY is set")
+	}
+	os.Setenv("ATLAS_TLS_NOVERIFY", "")
 }
 
 func TestNewClient_setsDefaultHTTPClient(t *testing.T) {
