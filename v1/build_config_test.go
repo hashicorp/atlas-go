@@ -87,8 +87,9 @@ func TestUploadBuildConfigVersion(t *testing.T) {
 		},
 	}
 	metadata := map[string]interface{}{"testing": true}
+	vars := map[string]string{"one": "two"}
 	data := new(bytes.Buffer)
-	err = client.UploadBuildConfigVersion(bc, metadata, data, int64(data.Len()))
+	err = client.UploadBuildConfigVersion(bc, metadata, vars, data, int64(data.Len()))
 	if err != nil {
 		t.Fatal(err)
 	}
