@@ -14,7 +14,10 @@ type bcWrapper struct {
 }
 
 // Atlas expects a list of key/value vars
-type BuildVar map[string]string
+type BuildVar struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
 type BuildVars []BuildVar
 
 // BuildConfig represents a Packer build configuration.
@@ -130,7 +133,7 @@ func (c *Client) CreateBuildConfig(user, name string) (*BuildConfig, error) {
 //
 // Actual API: "Create Build Config Version"
 func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, metadata map[string]interface{},
-	vars BuildVar, data io.Reader, size int64) error {
+	vars BuildVars, data io.Reader, size int64) error {
 
 	log.Printf("[INFO] uploading build configuration version %s (%d bytes), with metadata %q",
 		v.Slug(), size, metadata)
@@ -141,7 +144,7 @@ func (c *Client) UploadBuildConfigVersion(v *BuildConfigVersion, metadata map[st
 	var bodyData bcCreateWrapper
 	bodyData.Version.Builds = v.Builds
 	bodyData.Version.Metadata = metadata
-	bodyData.Version.Vars = BuildVars{vars}
+	bodyData.Version.Vars = vars
 	body, err := json.Marshal(bodyData)
 	if err != nil {
 		return err
