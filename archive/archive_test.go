@@ -127,6 +127,27 @@ func TestArchive_fileWithOpts(t *testing.T) {
 	}
 }
 
+func TestArchive_fileSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("git symlinks don't work on Windows")
+	}
+
+	path := filepath.Join(testFixture("archive-file-symlink"), "link", "link")
+	r, err := CreateArchive(path, new(ArchiveOpts))
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := []string{
+		"foo.txt",
+	}
+
+	entries := testArchive(t, r, false)
+	if !reflect.DeepEqual(entries, expected) {
+		t.Fatalf("bad: %#v", entries)
+	}
+}
+
 func TestArchive_dirExtra(t *testing.T) {
 	opts := &ArchiveOpts{
 		Extra: map[string]string{

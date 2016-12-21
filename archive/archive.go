@@ -371,6 +371,8 @@ func copyDirWalkFn(
 			if info.IsDir() {
 				return filepath.Walk(target, copyDirWalkFn(
 					tarW, target, subpath, opts, vcsInclude))
+			} else {
+				return nil
 			}
 		}
 
