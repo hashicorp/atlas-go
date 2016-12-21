@@ -1,1 +1,1 @@
-test-fixtures/archive-file-symlink/real/foo.txt
+../real/foo.txt
