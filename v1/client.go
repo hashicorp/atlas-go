@@ -13,6 +13,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-rootcerts"
@@ -147,6 +148,7 @@ func (c *Client) init() error {
 	}
 	t := cleanhttp.DefaultTransport()
 	t.TLSClientConfig = tlsConfig
+	t.ExpectContinueTimeout = 5 * time.Second
 	c.HTTPClient.Transport = t
 	return nil
 }
@@ -202,6 +204,11 @@ func (c *Client) putFile(rawURL string, r io.Reader, size int64) error {
 	request, err := c.rawRequest("PUT", url, &RequestOptions{
 		Body:       r,
 		BodyLength: size,
+		Headers: map[string]string{
+			// The 'Expect' header allows the server to reply with a redirect
+			// prior to the client uploading the request body.
+			"Expect": "100-continue",
+		},
 	})
 	if err != nil {
 		return err

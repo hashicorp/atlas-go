@@ -1,7 +1,9 @@
 package atlas
 
 import (
+	"bytes"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"reflect"
@@ -330,5 +332,39 @@ func TestClient_defaultHeaders(t *testing.T) {
 	// look for our test header
 	if decoded.Header.Get(testHeader) != testHeaderVal {
 		t.Fatalf("DefaultHeader %q reported as %q", testHeader, testHeaderVal)
+	}
+}
+
+func TestClient_putFile(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check that our upload headers were set properly
+		if v := r.Header.Get("Expect"); v != "100-continue" {
+			t.Fatalf("Bad value for 'Expect' header: %q", v)
+		}
+		if v := r.Header.Get("Content-Length"); v != "3" {
+			t.Fatalf("Bad value for 'Content-Length' header: %q", v)
+		}
+
+		// Check that the body is what we expect
+		body := &bytes.Buffer{}
+		if _, err := body.ReadFrom(r.Body); err != nil {
+			t.Fatal(err)
+		}
+		if body.String() != "bar" {
+			t.Fatalf("Bad request body: %q", body.String())
+		}
+	}))
+	defer srv.Close()
+
+	// Create the client
+	client, err := NewClient(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Send the request
+	buf := bytes.NewBufferString("bar")
+	if err := client.putFile(srv.URL, buf, int64(buf.Len())); err != nil {
+		t.Fatal(err)
 	}
 }
