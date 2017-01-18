@@ -1,7 +1,9 @@
 package atlas
 
 import (
+	"bytes"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"reflect"
@@ -330,5 +332,81 @@ func TestClient_defaultHeaders(t *testing.T) {
 	// look for our test header
 	if decoded.Header.Get(testHeader) != testHeaderVal {
 		t.Fatalf("DefaultHeader %q reported as %q", testHeader, testHeaderVal)
+	}
+}
+
+func TestClient_putFile(t *testing.T) {
+	var buf bytes.Buffer
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Ignore HEAD requests.
+		if r.Method == "HEAD" {
+			return
+		}
+
+		// Check the headers.
+		if v := r.Header.Get("Content-Length"); v != "3" {
+			t.Fatalf("Bad value for 'Content-Length' header: %q", v)
+		}
+
+		// Read in the request body.
+		if _, err := buf.ReadFrom(r.Body); err != nil {
+			t.Fatal(err)
+		}
+	}))
+	defer srv.Close()
+
+	// Create the client
+	client, err := NewClient(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Send the request.
+	body := bytes.NewBufferString("foo")
+	if err := client.putFile(srv.URL, body, int64(body.Len())); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check that the buffer was received.
+	if buf.String() != "foo" {
+		t.Fatalf("expect %q, got %q", "foo", buf.String())
+	}
+}
+
+func TestClient_putFile_redirect(t *testing.T) {
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set the location header during the preflight.
+		if r.Method == "HEAD" {
+			w.Header().Set("Location", "http://"+r.Host+"/redirect")
+			return
+		}
+
+		// Check that we only receive data on the redirect.
+		if !strings.HasSuffix(r.URL.Path, "/redirect") {
+			t.Fatal("Client did not follow redirect")
+		}
+
+		// Set that the PUT was called.
+		called = true
+	}))
+	defer srv.Close()
+
+	// Create the client
+	client, err := NewClient(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Send the request.
+	body := bytes.NewBufferString("foo")
+	if err := client.putFile(srv.URL, body, int64(body.Len())); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check that the request was carried out.
+	if !called {
+		t.Fatal("Client did not send a PUT")
 	}
 }

@@ -192,6 +192,18 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 }
 
 func (c *Client) putFile(rawURL string, r io.Reader, size int64) error {
+	log.Printf("[INFO] sending pre-flight request: %s", rawURL)
+
+	resp, err := c.HTTPClient.Head(rawURL)
+	if err != nil {
+		return err
+	}
+
+	if v := resp.Header.Get("Location"); v != "" {
+		log.Printf("[INFO] got redirect location: %s", v)
+		rawURL = v
+	}
+
 	log.Printf("[INFO] putting file: %s", rawURL)
 
 	url, err := url.Parse(rawURL)
