@@ -194,7 +194,7 @@ func (c *Client) Request(verb, spath string, ro *RequestOptions) (*http.Request,
 func (c *Client) putFile(rawURL string, r io.Reader, size int64) error {
 	log.Printf("[INFO] sending pre-flight request: %s", rawURL)
 
-	resp, err := c.HTTPClient.Head(rawURL)
+	resp, err := checkResp(c.HTTPClient.Head(rawURL))
 	if err != nil {
 		return err
 	}
