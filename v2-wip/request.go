@@ -11,6 +11,12 @@ import (
 	pathlib "path"
 )
 
+// ErrAuth is the error returned if a 401 is returned by an API request.
+var ErrAuth = fmt.Errorf("authentication failed")
+
+// ErrNotFound is the error returned if a 404 is returned by an API request.
+var ErrNotFound = fmt.Errorf("resource not found")
+
 // RequestOptions is the list of options to pass to the request.
 type RequestOptions struct {
 	// Params is a map of key-value pairs that will be added to the Request URL.

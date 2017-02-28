@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-rootcerts"
@@ -42,23 +41,6 @@ const (
 var projectURL = "https://github.com/hashicorp/atlas-go"
 var userAgent = fmt.Sprintf("AtlasGo/2.0 (+%s; %s)",
 	projectURL, runtime.Version())
-
-// ErrAuth is the error returned if a 401 is returned by an API request.
-var ErrAuth = fmt.Errorf("authentication failed")
-
-// ErrNotFound is the error returned if a 404 is returned by an API request.
-var ErrNotFound = fmt.Errorf("resource not found")
-
-// RailsError represents an error that was returned from the Rails server.
-type RailsError struct {
-	Errors []string `json:"errors"`
-}
-
-// Error collects all of the errors in the RailsError and returns a comma-
-// separated list of the errors that were returned from the server.
-func (re *RailsError) Error() string {
-	return strings.Join(re.Errors, ", ")
-}
 
 // Client represents a single connection to a Atlas API endpoint.
 type Client struct {
