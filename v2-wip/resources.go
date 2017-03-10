@@ -31,3 +31,23 @@ type ConfigurationVersion struct {
 type Environment struct {
 	// TODO
 }
+
+type State struct {
+	ID            int             `jsonapi:"primary,states"`
+	CreatedAt     string          `jsonapi:"attr,created-at"`
+	UpdatedAt     string          `jsonapi:"attr,updated-at"`
+	Configuration *Configuration  `jsonapi:"relation,configuration"`
+	Environment   *Environment    `jsonapi:"relation,environment"`
+	Versions      []*StateVersion `jsonapi:"relation,versions"`
+	HeadVersion   *StateVersion   `jsonapi:"relation,head-version"`
+}
+
+type StateVersion struct {
+	ID        int    `jsonapi:"primary,state-versions"`
+	CreatedAt string `jsonapi:"attr,created-at"`
+	UpdatedAt string `jsonapi:"attr,updated-at"`
+	Version   int    `jsonapi:"attr,version"`
+	Serial    int    `jsonapi:"attr,serial"`
+	Tfstate   string `jsonapi:"attr,tfstate-file"`
+	State     *State `jsonapi:"relation,state"`
+}
