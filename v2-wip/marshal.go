@@ -51,8 +51,8 @@ func Marshal(w io.Writer, m interface{}) error {
 	// "final" is what we're going to encode. If we have a blank ID, then
 	// we have to do some hoop-jumping to make sure it doesn't show up in the
 	// request.
-	final := m
-	if payload.Data.ID == "" {
+	var final interface{} = payload
+	if payload.Data.ID == "" || payload.Data.ID == "0" {
 		// Marshal to an in-memory buffer first to allow us to do replacement.
 		var buf bytes.Buffer
 		if err := json.NewEncoder(&buf).Encode(payload); err != nil {
