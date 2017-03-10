@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"reflect"
 
 	"github.com/google/jsonapi"
 )
@@ -16,6 +17,19 @@ import (
 // decoding).
 func Unmarshal(r io.Reader, m interface{}) error {
 	return jsonapi.UnmarshalPayload(r, m)
+}
+
+// UnmarshalMany unmarshals a collection of resources (where data is an
+// array in the JSONAPI structure).
+//
+// The second parameter is only used to determine the type to construct.
+// You should pass in an empty pointer to the structure TYPE you want to
+// fill. This actual pointer is not used. Example:
+//
+//     UnmarshalMany(r, new(StateVersion))
+//
+func UnmarshalMany(r io.Reader, m interface{}) ([]interface{}, error) {
+	return jsonapi.UnmarshalManyPayload(r, reflect.TypeOf(m))
 }
 
 // Marshal will marshal a single resource structure for making a request.
@@ -34,20 +48,29 @@ func Marshal(w io.Writer, m interface{}) error {
 	// We don't want to send any included, since the TFE API doesn't use it.
 	payload.Included = nil
 
-	// Marshal to an in-memory buffer first to allow us to do replacement.
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(payload); err != nil {
-		return err
-	}
+	// "final" is what we're going to encode. If we have a blank ID, then
+	// we have to do some hoop-jumping to make sure it doesn't show up in the
+	// request.
+	final := m
+	if payload.Data.ID == "" {
+		// Marshal to an in-memory buffer first to allow us to do replacement.
+		var buf bytes.Buffer
+		if err := json.NewEncoder(&buf).Encode(payload); err != nil {
+			return err
+		}
 
-	// Delete the ID from the data
-	var temp map[string]interface{}
-	if err := json.NewDecoder(&buf).Decode(&temp); err != nil {
-		return err
+		// Delete the ID from the data
+		var temp map[string]interface{}
+		if err := json.NewDecoder(&buf).Decode(&temp); err != nil {
+			return err
+		}
+		tempData := temp["data"].(map[string]interface{})
+		delete(tempData, "id")
+
+		// Set the final thing to encode to be our temp that has no ID
+		final = temp
 	}
-	tempData := temp["data"].(map[string]interface{})
-	delete(tempData, "id")
 
 	// Re-encode
-	return json.NewEncoder(w).Encode(temp)
+	return json.NewEncoder(w).Encode(final)
 }
