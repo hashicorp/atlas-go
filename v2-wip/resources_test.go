@@ -3,8 +3,6 @@ package atlas
 import (
 	"reflect"
 	"testing"
-
-	"github.com/google/jsonapi"
 )
 
 func TestRequest_stateIncludedVersions(t *testing.T) {
@@ -27,7 +25,7 @@ func TestRequest_stateIncludedVersions(t *testing.T) {
 	}
 
 	var data State
-	if err := jsonapi.UnmarshalPayload(resp.Body, &data); err != nil {
+	if err := Unmarshal(resp.Body, &data); err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,7 +69,7 @@ func TestRequest_stateVersion(t *testing.T) {
 	}
 
 	var data StateVersion
-	if err := jsonapi.UnmarshalPayload(resp.Body, &data); err != nil {
+	if err := Unmarshal(resp.Body, &data); err != nil {
 		t.Fatal(err)
 	}
 

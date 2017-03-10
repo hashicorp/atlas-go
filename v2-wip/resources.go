@@ -34,20 +34,20 @@ type Environment struct {
 
 type State struct {
 	ID            int             `jsonapi:"primary,states"`
-	CreatedAt     string          `jsonapi:"attr,created-at"`
-	UpdatedAt     string          `jsonapi:"attr,updated-at"`
-	Configuration *Configuration  `jsonapi:"relation,configuration"`
-	Environment   *Environment    `jsonapi:"relation,environment"`
-	Versions      []*StateVersion `jsonapi:"relation,versions"`
-	HeadVersion   *StateVersion   `jsonapi:"relation,head-version"`
+	CreatedAt     string          `jsonapi:"attr,created-at,omitempty"`
+	UpdatedAt     string          `jsonapi:"attr,updated-at,omitempty"`
+	Configuration *Configuration  `jsonapi:"relation,configuration,omitempty"`
+	Environment   *Environment    `jsonapi:"relation,environment,omitempty"`
+	Versions      []*StateVersion `jsonapi:"relation,versions,omitempty"`
+	HeadVersion   *StateVersion   `jsonapi:"relation,head-version,omitempty"`
 }
 
 type StateVersion struct {
-	ID        int    `jsonapi:"primary,state-versions"`
-	CreatedAt string `jsonapi:"attr,created-at"`
-	UpdatedAt string `jsonapi:"attr,updated-at"`
-	Version   int    `jsonapi:"attr,version"`
-	Serial    int    `jsonapi:"attr,serial"`
-	Tfstate   string `jsonapi:"attr,tfstate-file"`
-	State     *State `jsonapi:"relation,state"`
+	ID        int    `jsonapi:"primary,state-versions,omitempty"`
+	CreatedAt string `jsonapi:"attr,created-at,omitempty"`
+	UpdatedAt string `jsonapi:"attr,updated-at,omitempty"`
+	Version   int    `jsonapi:"attr,version,omitempty"`
+	Serial    int    `jsonapi:"attr,serial,omitempty"`
+	Tfstate   string `jsonapi:"attr,tfstate-file,omitempty"`
+	State     *State `jsonapi:"relation,state,omitempty"`
 }
