@@ -12,7 +12,7 @@ build:
 	go build -o bin/atlas-go ./v1
 
 test:
-	go test $(TEST) $(TESTARGS) -timeout=3s -parallel=4
+	go test $(TEST) $(TESTARGS) -timeout=10s -parallel=4
 	go vet $(TEST)
 	go test $(TEST) -race
 
