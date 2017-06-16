@@ -87,7 +87,7 @@ func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions/latest", hs.tfConfigLatest)
 	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions", hs.tfConfigUpload)
-
+	mux.HandleFunc("/api/v1/environments/hashicorp/existing/plan", hs.tfQueuePlan)
 	// add an endpoint for testing arbitrary requests
 	mux.HandleFunc("/_test", hs.testHandler)
 }
@@ -186,6 +186,19 @@ func (hs *atlasServer) tfConfigLatest(w http.ResponseWriter, r *http.Request) {
 			"metadata": { "foo": "bar" },
 			"variables": { "foo": "bar" }
 		}
+	}
+	`)
+}
+
+func (hs *atlasServer) tfQueuePlan(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	fmt.Fprint(w, `
+	{
+		"success": true
 	}
 	`)
 }

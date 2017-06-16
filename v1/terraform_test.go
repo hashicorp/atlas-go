@@ -55,3 +55,23 @@ func TestCreateTerraformConfigVersion(t *testing.T) {
 		t.Fatalf("bad: %v", vsn)
 	}
 }
+
+func TestQueueTerraformBuild(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	success, err := client.QueuePlan("hashicorp", "does_not_exist")
+	if err == nil || success == true {
+		t.Fatal("Expected plan of non-existing plan to fail")
+	}
+
+	success, err = client.QueuePlan("hashicorp", "existing")
+	if err != nil || success == false {
+		t.Fatal("Expected plan of existing plan to succeed")
+	}
+}
