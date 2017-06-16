@@ -56,7 +56,7 @@ func TestCreateTerraformConfigVersion(t *testing.T) {
 	}
 }
 
-func TestQueueTerraformBuild(t *testing.T) {
+func TestQueuePlan(t *testing.T) {
 	server := newTestAtlasServer(t)
 	defer server.Stop()
 
