@@ -55,3 +55,21 @@ func TestCreateTerraformConfigVersion(t *testing.T) {
 		t.Fatalf("bad: %v", vsn)
 	}
 }
+
+func TestUpdateTerraformEnvVariables(t *testing.T) {
+	server := newTestAtlasServer(t)
+	defer server.Stop()
+
+	client, err := NewClient(server.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vars := map[string]string{"foo": "bar"}
+
+	err = client.UpdateTerraformEnvVariables("hashicorp", "existing", vars)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+

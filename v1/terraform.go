@@ -52,8 +52,8 @@ func (c *Client) TerraformConfigLatest(user, name string) (*TerraformConfigVersi
 	return wrapper.Version, nil
 }
 
-// CreateTerraformConfigVersion creatse a new Terraform configuration
-// versions and uploads a slug with it.
+// CreateTerraformConfigVersion creates a new Terraform configuration
+// version and uploads a slug with it.
 func (c *Client) CreateTerraformConfigVersion(
 	user string, name string,
 	version *TerraformConfigVersion,
@@ -94,6 +94,36 @@ func (c *Client) CreateTerraformConfigVersion(
 	}
 
 	return result.Version, nil
+}
+
+// UpdateTerraformEnvVariables sets the given variables on the given Terraform environment.
+// Note that variables that are not in the map will not be changed.
+func (c *Client) UpdateTerraformEnvVariables(user, name string, variables map[string]string) error {
+	log.Printf("[INFO] setting variables for env %s/%s", user, name)
+
+	endpoint := fmt.Sprintf(
+		"/api/v1/environments/%s/%s/variables", user, name)
+
+	data := make(map[string]map[string]string)
+	data["variables"] = variables
+	body, err := json.Marshal(data)
+
+	request, err := c.Request("PUT", endpoint, &RequestOptions{
+		Body: bytes.NewReader(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = checkResp(c.HTTPClient.Do(request))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type tfConfigVersionCreate struct {

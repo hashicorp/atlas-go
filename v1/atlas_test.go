@@ -87,6 +87,7 @@ func (hs *atlasServer) setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions/latest", hs.tfConfigLatest)
 	mux.HandleFunc("/api/v1/terraform/configurations/hashicorp/existing/versions", hs.tfConfigUpload)
+	mux.HandleFunc("/api/v1/environments/hashicorp/existing/variables", hs.tfUpdateTerraformEnvVariables)
 
 	// add an endpoint for testing arbitrary requests
 	mux.HandleFunc("/_test", hs.testHandler)
@@ -216,6 +217,13 @@ func (hs *atlasServer) tfConfigUpload(w http.ResponseWriter, r *http.Request) {
 		"upload_path": "%s"
 	}
 	`, uploadPath)
+}
+
+func (hs *atlasServer) tfUpdateTerraformEnvVariables(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PUT" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 }
 
 func (hs *atlasServer) vagrantArtifactExistingHandler(w http.ResponseWriter, r *http.Request) {
