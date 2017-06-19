@@ -188,8 +188,8 @@ func (c *Client) ArtifactFileURL(av *ArtifactVersion) (*url.URL, error) {
 	}
 
 	u := *c.URL
-	u.Path = fmt.Sprintf("/api/v1/artifacts/%s/%s/%s/file",
-		av.User, av.Name, av.Type)
+	u.Path = fmt.Sprintf("/api/v1/artifacts/%s/%s/%s/%d/file",
+		av.User, av.Name, av.Type, av.Version)
 	return &u, nil
 }
 
