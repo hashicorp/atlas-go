@@ -481,10 +481,10 @@ func (hs *atlasServer) vagrantUploadAppHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (hs *atlasServer) binstoreHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PUT" {
+	switch r.Method {
+	case "PUT", "HEAD":
+		w.WriteHeader(http.StatusOK)
+	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
