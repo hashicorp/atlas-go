@@ -372,6 +372,8 @@ func copyDirWalkFn(
 				return filepath.Walk(target, copyDirWalkFn(
 					tarW, target, subpath, opts, vcsInclude))
 			}
+			// return now so that we don't try to copy twice
+			return nil
 		}
 
 		return copyConcreteEntry(tarW, subpath, path, info)
