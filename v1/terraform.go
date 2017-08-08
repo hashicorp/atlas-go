@@ -52,6 +52,35 @@ func (c *Client) TerraformConfigLatest(user, name string) (*TerraformConfigVersi
 	return wrapper.Version, nil
 }
 
+// QueuePlan queues a new Terraform build and returns success
+// if the request was received.
+func (c *Client) QueuePlan(user string, name string) (bool, error) {
+	log.Printf("[INFO] queuing plan for %s/%s", user, name)
+
+	endpoint := fmt.Sprintf("/api/v1/environments/%s/%s/plan", user, name)
+
+	request, err := c.Request("POST", endpoint, &RequestOptions{
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+	if err != nil {
+		return false, err
+	}
+
+	response, err := checkResp(c.HTTPClient.Do(request))
+	if err != nil {
+		return false, err
+	}
+
+	var result SuccessResponse
+	if err := decodeJSON(response, &result); err != nil {
+		return false, err
+	}
+
+	return result.Success, nil
+}
+
 // CreateTerraformConfigVersion creatse a new Terraform configuration
 // versions and uploads a slug with it.
 func (c *Client) CreateTerraformConfigVersion(
@@ -94,6 +123,10 @@ func (c *Client) CreateTerraformConfigVersion(
 	}
 
 	return result.Version, nil
+}
+
+type SuccessResponse struct {
+	Success bool `json:"success"`
 }
 
 type tfConfigVersionCreate struct {
