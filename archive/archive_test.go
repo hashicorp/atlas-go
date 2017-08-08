@@ -277,8 +277,11 @@ func TestArchive_dirWithSymlinkToFile(t *testing.T) {
 	}
 
 	expected := []string{
-		"link/",
-		"link/foo.txt",
+		"deeper/",
+		"deeper/adeeperlink",
+		"deeper/linklink",
+		"deeper/linklinklink",
+		"link",
 	}
 
 	entries := testArchive(t, r, false)
