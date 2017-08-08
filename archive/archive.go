@@ -371,6 +371,8 @@ func copyDirWalkFn(
 			if info.IsDir() {
 				return filepath.Walk(target, copyDirWalkFn(
 					tarW, target, subpath, opts, vcsInclude))
+			} else {
+				return nil
 			}
 			// return now so that we don't try to copy twice
 			return nil
@@ -486,7 +488,8 @@ func readLinkFull(path string, info os.FileInfo) (string, os.FileInfo, error) {
 			return "", nil, err
 		}
 		if !filepath.IsAbs(target) {
-			target, err = filepath.Abs(target)
+			baseDir := filepath.Dir(path)
+			target, err = filepath.Abs(filepath.Join(baseDir, target))
 			if err != nil {
 				return "", nil, err
 			}
