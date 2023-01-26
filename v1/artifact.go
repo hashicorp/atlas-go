@@ -145,7 +145,7 @@ func (c *Client) ArtifactSearch(opts *ArtifactSearchOpts) ([]*ArtifactVersion, e
 }
 
 // CreateArtifact creates and returns a new Artifact in Atlas. Any errors that
-// occurr are returned.
+// occur are returned.
 func (c *Client) CreateArtifact(user, name string) (*Artifact, error) {
 	log.Printf("[INFO] creating artifact: %s/%s", user, name)
 	body, err := json.Marshal(&artifactWrapper{&Artifact{
