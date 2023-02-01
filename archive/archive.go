@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // archive is package that helps create archives in a format that
 // Atlas expects with its various upload endpoints.
 package archive
