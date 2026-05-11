@@ -1,3 +1,5 @@
+// Copyright IBM Corp. 2014, 2026
+
 // archive is package that helps create archives in a format that
 // Atlas expects with its various upload endpoints.
 package archive
